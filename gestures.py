@@ -133,9 +133,8 @@ socketio = SocketIO(
 # ================================================================
 
 class GestureRecognizer:
-    """Hand gesture recognition using MediaPipe landmarks"""
-    
     def __init__(self):
+        # MediaPipe 0.10.30+ import structure
         self.mp_hands = mp.solutions.hands
         self.mp_drawing = mp.solutions.drawing_utils
         self.mp_drawing_styles = mp.solutions.drawing_styles
@@ -143,9 +142,9 @@ class GestureRecognizer:
         self.hands = self.mp_hands.Hands(
             static_image_mode=False,
             max_num_hands=1,
-            model_complexity=MP_MODEL_COMPLEXITY,
-            min_detection_confidence=MP_MIN_DETECTION_CONFIDENCE,
-            min_tracking_confidence=MP_MIN_TRACKING_CONFIDENCE
+            model_complexity=1,  # Use integer, not variable
+            min_detection_confidence=0.5,
+            min_tracking_confidence=0.5
         )
         
         self.gesture_history = []
