@@ -292,25 +292,25 @@
             display: none;
         }
 
-        /* ----- PROPERTIES PANEL ----- */
+        /* ----- PROPERTIES PANEL (right sidebar) ----- */
         #properties-panel {
             position: absolute;
             top: 80px;
             right: 24px;
             z-index: 50;
-            padding: 16px 20px;
+            padding: 0;
             background: var(--glass);
             backdrop-filter: blur(20px);
             border-radius: var(--radius);
             border: 1px solid var(--glass-border);
-            min-width: 190px;
+            width: 230px;
             display: none;
             font-size: 12px;
             box-shadow: var(--shadow);
-            pointer-events: none;
         }
         #properties-panel.visible {
-            display: block;
+            display: flex;
+            flex-direction: column;
             animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         @keyframes slideIn {
@@ -327,16 +327,15 @@
             color: var(--primary);
             font-weight: 700;
             font-size: 13px;
-            margin-bottom: 10px;
             letter-spacing: 1px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            padding-bottom: 8px;
         }
         #properties-panel .row {
             display: flex;
             justify-content: space-between;
-            padding: 4px 0;
+            align-items: center;
+            padding: 5px 0;
             border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            gap: 8px;
         }
         #properties-panel .row:last-child {
             border-bottom: none;
@@ -344,11 +343,254 @@
         #properties-panel .row .lbl {
             color: var(--text-secondary);
             font-weight: 300;
+            flex-shrink: 0;
         }
         #properties-panel .row .val {
             color: var(--primary);
             font-weight: 500;
             font-family: 'Courier New', monospace;
+        }
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            flex-shrink: 0;
+        }
+        .panel-zoom-controls {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .panel-zoom-controls button {
+            width: 20px;
+            height: 20px;
+            border-radius: 5px;
+            border: 1px solid var(--glass-border);
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text-secondary);
+            font-size: 12px;
+            line-height: 1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .panel-zoom-controls button:hover {
+            color: var(--primary);
+            border-color: var(--primary);
+        }
+        .panel-zoom-controls .zoom-pct {
+            font-size: 10px;
+            color: var(--text-secondary);
+            min-width: 30px;
+            text-align: center;
+        }
+        .panel-body {
+            overflow-y: auto;
+            padding: 14px 16px;
+            transform-origin: top left;
+        }
+        .panel-section {
+            margin-bottom: 16px;
+        }
+        .panel-section:last-child {
+            margin-bottom: 0;
+        }
+        .panel-section-title {
+            font-size: 10px;
+            letter-spacing: 1.5px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        #outliner-list {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            max-height: 160px;
+            overflow-y: auto;
+        }
+        .outliner-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 8px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.03);
+            cursor: pointer;
+            font-size: 11px;
+            transition: all 0.15s ease;
+            gap: 6px;
+        }
+        .outliner-item:hover {
+            background: var(--primary-dim);
+        }
+        .outliner-item.active {
+            background: var(--primary-dim);
+            border: 1px solid var(--primary);
+        }
+        .outliner-item .oi-name {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .outliner-item .oi-del {
+            opacity: 0.5;
+            font-size: 12px;
+            padding: 0 2px;
+        }
+        .outliner-item .oi-del:hover {
+            opacity: 1;
+            color: #ff4466;
+        }
+        .outliner-empty {
+            color: var(--text-secondary);
+            font-size: 11px;
+            font-style: italic;
+            padding: 4px 0;
+        }
+        .prop-input {
+            width: 56px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 5px;
+            color: var(--primary);
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            padding: 3px 4px;
+            text-align: right;
+        }
+        .prop-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        .prop-xyz {
+            display: flex;
+            gap: 4px;
+        }
+
+        /* ----- LEFT TOOLBAR ----- */
+        #left-toolbar {
+            position: absolute;
+            top: 80px;
+            left: 20px;
+            z-index: 50;
+            width: 200px;
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border-radius: var(--radius);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+        }
+        #left-toolbar .panel-body {
+            max-height: 70vh;
+        }
+        .gizmo-modes {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+        }
+        .gizmo-modes button {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            padding: 8px 2px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 9px;
+            font-family: inherit;
+            letter-spacing: 0.3px;
+            transition: all 0.15s ease;
+        }
+        .gizmo-modes button .gm-icon {
+            font-size: 16px;
+        }
+        .gizmo-modes button:hover {
+            border-color: var(--primary);
+            color: #fff;
+        }
+        .gizmo-modes button.active {
+            background: var(--primary-dim);
+            border-color: var(--primary);
+            color: var(--primary);
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.15);
+        }
+        .shape-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+        }
+        .shape-grid button {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            padding: 8px 2px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 9px;
+            font-family: inherit;
+            transition: all 0.15s ease;
+        }
+        .shape-grid button .sg-icon {
+            font-size: 18px;
+        }
+        .shape-grid button:hover {
+            border-color: var(--primary);
+            color: #fff;
+            transform: translateY(-2px);
+        }
+        .toolbar-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .toolbar-actions button {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 11px;
+            font-family: inherit;
+            transition: all 0.15s ease;
+        }
+        .toolbar-actions button:hover {
+            border-color: var(--primary);
+            color: #fff;
+        }
+        .toolbar-actions button.danger:hover {
+            border-color: #ff4466;
+            color: #ff4466;
+        }
+        .extrude-hint {
+            font-size: 10px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            display: none;
+        }
+        .extrude-hint.visible {
+            display: block;
         }
 
         /* ----- SAVE CONTROLS ----- */
@@ -655,6 +897,44 @@
             border-radius: 4px;
         }
 
+        /* ----- DESKTOP FIT (ensure everything stays within the viewport,
+           sidebars scroll independently, nothing gets clipped) ----- */
+        @media (min-width: 1024px) {
+            #left-toolbar {
+                top: 76px;
+                left: 20px;
+                max-height: calc(100vh - 100px);
+            }
+            #left-toolbar .panel-body {
+                max-height: calc(100vh - 160px);
+            }
+            #properties-panel {
+                display: flex;
+                top: 76px;
+                right: 20px;
+                max-height: calc(100vh - 100px);
+            }
+            #properties-panel .panel-body {
+                max-height: calc(100vh - 160px);
+            }
+            #status-bar {
+                left: 236px;
+                max-width: calc(100vw - 236px - 270px - 40px);
+            }
+            #save-controls {
+                right: 266px;
+            }
+            #camera-container {
+                right: 266px;
+                bottom: 20px;
+            }
+            #gesture-guide {
+                bottom: 20px;
+                max-width: calc(100vw - 480px);
+                overflow-x: auto;
+            }
+        }
+
         /* ----- RESPONSIVE ----- */
         @media (max-width: 768px) {
             #camera-container {
@@ -801,13 +1081,91 @@
             <span class="value gesture" id="gesture-display">—</span>
         </div>
 
-        <!-- Properties Panel -->
+        <!-- Left Toolbar: gizmo modes + shape picker + actions -->
+        <div id="left-toolbar">
+            <div class="panel-header">
+                <span class="title">◈ TOOLS</span>
+            </div>
+            <div class="panel-body" id="left-toolbar-body">
+                <div class="panel-section">
+                    <div class="panel-section-title">Gizmo</div>
+                    <div class="gizmo-modes">
+                        <button data-mode="translate" class="active" title="Move (G)"><span class="gm-icon">✥</span>Move</button>
+                        <button data-mode="rotate" title="Rotate (R)"><span class="gm-icon">⟳</span>Rotate</button>
+                        <button data-mode="scale" title="Scale (S)"><span class="gm-icon">⤢</span>Scale</button>
+                        <button data-mode="extrude" title="Push/Pull a face (E)"><span class="gm-icon">⬆</span>Face</button>
+                    </div>
+                    <div class="extrude-hint" id="extrude-hint">Drag a face on the selected shape up/down to push or pull it along that axis.</div>
+                </div>
+                <div class="panel-section">
+                    <div class="panel-section-title">Add Shape</div>
+                    <div class="shape-grid">
+                        <button data-shape="box" title="Cube"><span class="sg-icon">◼</span>Cube</button>
+                        <button data-shape="sphere" title="Sphere"><span class="sg-icon">●</span>Sphere</button>
+                        <button data-shape="cylinder" title="Cylinder"><span class="sg-icon">▮</span>Cylinder</button>
+                        <button data-shape="cone" title="Cone"><span class="sg-icon">▲</span>Cone</button>
+                        <button data-shape="torus" title="Torus"><span class="sg-icon">◯</span>Torus</button>
+                        <button data-shape="torusKnot" title="Torus Knot"><span class="sg-icon">➰</span>Knot</button>
+                        <button data-shape="dodecahedron" title="Dodecahedron"><span class="sg-icon">⬠</span>Dodeca</button>
+                        <button data-shape="icosahedron" title="Icosahedron"><span class="sg-icon">⬡</span>Icosa</button>
+                        <button data-shape="octahedron" title="Octahedron"><span class="sg-icon">◆</span>Octa</button>
+                        <button data-shape="plane" title="Plane"><span class="sg-icon">▭</span>Plane</button>
+                    </div>
+                </div>
+                <div class="panel-section">
+                    <div class="panel-section-title">Actions</div>
+                    <div class="toolbar-actions">
+                        <button id="tb-duplicate"><span class="icon">⎘</span> Duplicate</button>
+                        <button id="tb-delete" class="danger"><span class="icon">🗑️</span> Delete</button>
+                        <button id="tb-reset-view"><span class="icon">🔄</span> Reset View</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Properties Panel (right sidebar: outliner + selected object detail) -->
         <div id="properties-panel">
-            <div class="title">◈ SELECTED</div>
-            <div class="row"><span class="lbl">Name</span><span class="val" id="obj-name">—</span></div>
-            <div class="row"><span class="lbl">Position</span><span class="val" id="obj-pos">0, 0, 0</span></div>
-            <div class="row"><span class="lbl">Rotation</span><span class="val" id="obj-rot">0°, 0°, 0°</span></div>
-            <div class="row"><span class="lbl">Scale</span><span class="val" id="obj-scale">1.00</span></div>
+            <div class="panel-header">
+                <span class="title">◈ SCENE</span>
+                <div class="panel-zoom-controls">
+                    <button id="panel-zoom-out" title="Zoom out">−</button>
+                    <span class="zoom-pct" id="panel-zoom-pct">100%</span>
+                    <button id="panel-zoom-in" title="Zoom in">+</button>
+                </div>
+            </div>
+            <div class="panel-body" id="properties-panel-body">
+                <div class="panel-section">
+                    <div class="panel-section-title">Outliner</div>
+                    <div id="outliner-list">
+                        <div class="outliner-empty" id="outliner-empty">No objects yet — add a shape to begin.</div>
+                    </div>
+                </div>
+                <div class="panel-section" id="selected-section" style="display:none;">
+                    <div class="panel-section-title">Selected</div>
+                    <div class="row"><span class="lbl">Name</span><span class="val" id="obj-name">—</span></div>
+                    <div class="row"><span class="lbl">Position</span>
+                        <div class="prop-xyz">
+                            <input class="prop-input" id="obj-pos-x" type="number" step="0.1">
+                            <input class="prop-input" id="obj-pos-y" type="number" step="0.1">
+                            <input class="prop-input" id="obj-pos-z" type="number" step="0.1">
+                        </div>
+                    </div>
+                    <div class="row"><span class="lbl">Rotation°</span>
+                        <div class="prop-xyz">
+                            <input class="prop-input" id="obj-rot-x" type="number" step="1">
+                            <input class="prop-input" id="obj-rot-y" type="number" step="1">
+                            <input class="prop-input" id="obj-rot-z" type="number" step="1">
+                        </div>
+                    </div>
+                    <div class="row"><span class="lbl">Scale</span>
+                        <div class="prop-xyz">
+                            <input class="prop-input" id="obj-scale-x" type="number" step="0.1">
+                            <input class="prop-input" id="obj-scale-y" type="number" step="0.1">
+                            <input class="prop-input" id="obj-scale-z" type="number" step="0.1">
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Save Controls -->
@@ -832,13 +1190,17 @@
 
         <!-- Gesture Guide -->
         <div id="gesture-guide">
-            <span class="icon" data-gesture="fist">✊</span>
-            <span class="icon" data-gesture="open">🖐️</span>
-            <span class="icon" data-gesture="point">☝️</span>
-            <span class="icon" data-gesture="two">✌️</span>
-            <span class="icon" data-gesture="pinch">🤏</span>
-            <span class="icon" data-gesture="ok">👌</span>
-            <span class="icon" data-gesture="shaka">🤙</span>
+            <span class="icon" data-gesture="fist" title="Fist — zoom out / move gizmo">✊</span>
+            <span class="icon" data-gesture="open" title="Open hand — zoom in">🖐️</span>
+            <span class="icon" data-gesture="point" title="Point — select object">☝️</span>
+            <span class="icon" data-gesture="two" title="Two fingers — move object">✌️</span>
+            <span class="icon" data-gesture="pinch" title="Pinch — scale object">🤏</span>
+            <span class="icon" data-gesture="ok" title="OK — properties">👌</span>
+            <span class="icon" data-gesture="shaka" title="Shaka — rotate view/object">🤙</span>
+            <span class="icon" data-gesture="stop" title="Stop — delete selected">✋</span>
+            <span class="icon" data-gesture="thumb_up" title="Thumb up — save">👍</span>
+            <span class="icon" data-gesture="thumb_down" title="Thumb down — reset view">👎</span>
+            <span class="icon" data-gesture="spock" title="Spock — undo">🖖</span>
         </div>
     </div>
 
@@ -879,6 +1241,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js">
     </script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js">
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TransformControls.js">
     </script>
 
     <script>
@@ -1012,14 +1376,23 @@
                     scene.rotate(action.x || 0, action.y || 0);
                     break;
                 case 'select':
-                    if (action.index !== undefined && state.objects[action.index]) {
-                        scene.selectObject(state.objects[action.index]);
-                    } else if (action.index === -1) {
-                        scene.selectObject(null);
+                    // Use the hand's position as a virtual cursor: raycast
+                    // from the camera through that point in the canvas.
+                    // The camera feed is mirrored (CSS scaleX(-1)) for a
+                    // natural selfie view, so the x coordinate is flipped
+                    // here to line up with what the user sees on screen.
+                    if (action.position) {
+                        const ndcX = (1 - action.position.x) * 2 - 1;
+                        const ndcY = 1 - action.position.y * 2;
+                        scene.raycaster.setFromCamera({ x: ndcX, y: ndcY }, scene.camera);
+                        const hits = scene.raycaster.intersectObjects(state.objects, false);
+                        if (hits.length > 0 && scene.selectedObject !== hits[0].object) {
+                            scene.selectObject(hits[0].object);
+                        }
                     }
                     break;
                 case 'drag':
-                    if (scene.selectedObject) {
+                    if (scene.selectedObject && scene.activeTool !== 'extrude') {
                         const dx = action.dx || 0;
                         const dy = action.dy || 0;
                         const dz = action.dz || 0;
@@ -1079,6 +1452,10 @@
             constructor(container) {
                 this.container = container;
                 this.selectedObject = null;
+                this.gizmoMode = 'translate'; // translate | rotate | scale
+                this.activeTool = 'translate'; // same as gizmoMode, or 'extrude'
+                this.spawnCount = 0;
+                this.extrudeState = null;
 
                 // Scene
                 this.scene = new THREE.Scene();
@@ -1114,11 +1491,28 @@
                 this.controls.target.set(0, 0.5, 0);
                 this.controls.update();
 
+                // Transform gizmo (move / rotate / scale handles on the
+                // selected object). Canvas starts blank — objects are only
+                // added when the user picks a shape from the toolbar.
+                this.transformControls = new THREE.TransformControls(this.camera, this.renderer.domElement);
+                this.transformControls.setMode(this.gizmoMode);
+                this.transformControls.setSize(0.9);
+                this.transformControls.addEventListener('dragging-changed', (e) => {
+                    this.controls.enabled = !e.value;
+                });
+                this.transformControls.addEventListener('objectChange', () => {
+                    if (this.selectedObject) {
+                        this.updateProperties(this.selectedObject);
+                        state.hasChanges = true;
+                    }
+                });
+                this.scene.add(this.transformControls);
+
                 // Setup
                 this.setupLights();
                 this.setupGrid();
-                this.createObjects();
                 this.setupRaycaster();
+                this.setupInteraction();
 
                 // Animation loop
                 this.animate();
@@ -1203,55 +1597,40 @@
                 this.scene.add(ring);
             }
 
-            createObjects() {
-                const objectTypes = [
-                    { type: 'box', color: 0x00f0ff, pos: [-2.5, 0.5, 0], label: 'Cube' },
-                    { type: 'sphere', color: 0xff00e5, pos: [2.5, 0.5, 0], label: 'Sphere' },
-                    { type: 'cylinder', color: 0xffd700, pos: [-1.5, 0.5, -2.5], label: 'Cylinder' },
-                    { type: 'cone', color: 0x00ff88, pos: [1.5, 0.5, -2.5], label: 'Cone' },
-                    { type: 'torus', color: 0xff6600, pos: [-1.5, 0.5, 2.5], label: 'Torus' },
-                    { type: 'torusKnot', color: 0xaa44ff, pos: [1.5, 0.5, 2.5], label: 'Knot' },
-                    { type: 'dodecahedron', color: 0xff44aa, pos: [0, 0.5, -4], label: 'Dodeca' },
-                    { type: 'icosahedron', color: 0x44ffaa, pos: [0, 0.5, 4], label: 'Icosa' },
-                    { type: 'octahedron', color: 0xffaa44, pos: [-3.5, 0.5, -1.5], label: 'Octa' },
-                    { type: 'ring', color: 0x44aaff, pos: [3.5, 0.5, -1.5], label: 'Ring' },
-                    { type: 'star', color: 0xffdd44, pos: [-3.5, 0.5, 1.5], label: 'Star' },
-                    { type: 'heart', color: 0xff4466, pos: [3.5, 0.5, 1.5], label: 'Heart' },
-                    { type: 'gear', color: 0x66ccff, pos: [0, 1.2, 0], label: 'Gear' },
-                    { type: 'spring', color: 0x88ff88, pos: [0, 1.2, -3], label: 'Spring' },
-                    { type: 'helix', color: 0xff88ff, pos: [0, 1.2, 3], label: 'Helix' },
-                    { type: 'teapot', color: 0x88ddff, pos: [-4, 0.5, -3], label: 'Teapot' },
-                    { type: 'sofa', color: 0xdd88ff, pos: [4, 0.5, -3], label: 'Sofa' },
-                    { type: 'table', color: 0x88dd88, pos: [-4, 0.5, 3], label: 'Table' },
-                    { type: 'chair', color: 0xdddd88, pos: [4, 0.5, 3], label: 'Chair' },
-                    { type: 'tree', color: 0x44dd44, pos: [-2.5, 0.5, -4.5], label: 'Tree' },
-                    { type: 'car', color: 0xff4444, pos: [2.5, 0.5, -4.5], label: 'Car' },
-                    { type: 'plane', color: 0x44ddff, pos: [-2.5, 0.5, 4.5], label: 'Plane' },
-                    { type: 'rocket', color: 0xff8844, pos: [2.5, 0.5, 4.5], label: 'Rocket' },
-                    { type: 'robot', color: 0x88ccff, pos: [0, 1.0, -5.5], label: 'Robot' },
-                    { type: 'dragon', color: 0xff6644, pos: [0, 1.0, 5.5], label: 'Dragon' },
-                    { type: 'castle', color: 0xccaa88, pos: [-5, 0.5, 0], label: 'Castle' },
-                    { type: 'lamp', color: 0xffdd88, pos: [5, 0.5, 0], label: 'Lamp' },
-                    { type: 'pyramid', color: 0xffaa44, pos: [0, 0.5, -6], label: 'Pyramid' },
-                    { type: 'crystal', color: 0x88ffff, pos: [0, 0.5, 6], label: 'Crystal' },
-                    { type: 'mobius', color: 0xff88ff, pos: [-3.5, 0.5, -4], label: 'Mobius' },
-                ];
+            // Spawn a new primitive onto the (initially blank) canvas.
+            // Places it in an open spot near the origin so successive shapes
+            // don't stack exactly on top of each other, then selects it.
+            spawnShape(type) {
+                const SHAPE_COLORS = {
+                    box: 0x00f0ff, sphere: 0xff00e5, cylinder: 0xffd700,
+                    cone: 0x00ff88, torus: 0xff6600, torusKnot: 0xaa44ff,
+                    dodecahedron: 0xff44aa, icosahedron: 0x44ffaa,
+                    octahedron: 0xffaa44, plane: 0x44ddff,
+                };
+                const label = type.charAt(0).toUpperCase() + type.slice(1).replace(/([A-Z])/g, ' $1');
+                const color = SHAPE_COLORS[type] || 0x00f0ff;
+                const mesh = this.createMesh(type, color);
 
-                state.objects = [];
+                // Simple spiral layout so new shapes land next to (not on
+                // top of) existing ones.
+                const n = this.spawnCount++;
+                const angle = n * 2.4;
+                const radius = n === 0 ? 0 : 0.9 + Math.floor(n / 6) * 0.9;
+                mesh.position.set(Math.cos(angle) * radius, 0.5, Math.sin(angle) * radius);
 
-                objectTypes.forEach((def, index) => {
-                    const mesh = this.createMesh(def.type, def.color);
-                    mesh.position.set(...def.pos);
-                    mesh.userData = {
-                        id: `obj_${index}`,
-                        name: def.label,
-                        type: def.type,
-                        color: def.color,
-                        originalColor: def.color,
-                    };
-                    this.scene.add(mesh);
-                    state.objects.push(mesh);
-                });
+                mesh.userData = {
+                    id: `obj_${Date.now()}_${n}`,
+                    name: `${label} ${n + 1}`,
+                    type: type,
+                    color: color,
+                    originalColor: color,
+                };
+                this.scene.add(mesh);
+                state.objects.push(mesh);
+                this.selectObject(mesh);
+                state.hasChanges = true;
+                refreshOutliner();
+                return mesh;
             }
 
             createMesh(type, color) {
@@ -1387,6 +1766,136 @@
                 this.mouse = new THREE.Vector2();
             }
 
+            // Mouse/touch selection + the custom "push/pull a face" (extrude)
+            // tool. Gizmo dragging itself is handled by THREE.TransformControls;
+            // this only covers picking objects and the extrude drag, since
+            // that's not something TransformControls does natively.
+            setupInteraction() {
+                const dom = this.renderer.domElement;
+                let downPos = null;
+                let downTime = 0;
+
+                const toNDC = (clientX, clientY) => {
+                    const rect = dom.getBoundingClientRect();
+                    return {
+                        x: ((clientX - rect.left) / rect.width) * 2 - 1,
+                        y: -((clientY - rect.top) / rect.height) * 2 + 1,
+                    };
+                };
+
+                dom.addEventListener('pointerdown', (e) => {
+                    if (this.transformControls.dragging) return;
+                    downPos = { x: e.clientX, y: e.clientY };
+                    downTime = Date.now();
+
+                    if (this.activeTool === 'extrude' && this.selectedObject) {
+                        const ndc = toNDC(e.clientX, e.clientY);
+                        this.mouse.set(ndc.x, ndc.y);
+                        this.raycaster.setFromCamera(this.mouse, this.camera);
+                        const hit = this.raycaster.intersectObject(this.selectedObject, false)[0];
+                        if (hit && hit.face) {
+                            this.beginExtrude(hit);
+                        }
+                    }
+                });
+
+                window.addEventListener('pointermove', (e) => {
+                    if (this.extrudeState) {
+                        this.updateExtrude(e.clientY);
+                    }
+                });
+
+                window.addEventListener('pointerup', (e) => {
+                    if (this.extrudeState) {
+                        this.endExtrude();
+                        return;
+                    }
+                    if (!downPos) return;
+                    const dist = Math.hypot(e.clientX - downPos.x, e.clientY - downPos.y);
+                    const elapsed = Date.now() - downTime;
+                    downPos = null;
+                    // Only treat as a "click" (not a camera-orbit drag) if the
+                    // pointer barely moved.
+                    if (dist > 6 || elapsed > 600) return;
+                    if (this.transformControls.dragging) return;
+                    if (this.activeTool === 'extrude') return; // handled above
+
+                    const ndc = toNDC(e.clientX, e.clientY);
+                    this.mouse.set(ndc.x, ndc.y);
+                    this.raycaster.setFromCamera(this.mouse, this.camera);
+                    const hits = this.raycaster.intersectObjects(state.objects, false);
+                    if (hits.length > 0) {
+                        this.selectObject(hits[0].object);
+                    } else {
+                        this.selectObject(null);
+                    }
+                });
+            }
+
+            // Determine which local axis a face's normal points along
+            // (dominant component), for both raycasted mouse hits and the
+            // approximate gesture-driven case.
+            getFaceAxis(localNormal) {
+                const ax = Math.abs(localNormal.x), ay = Math.abs(localNormal.y), az = Math.abs(localNormal.z);
+                if (ax >= ay && ax >= az) return { axis: 'x', sign: Math.sign(localNormal.x) || 1 };
+                if (ay >= ax && ay >= az) return { axis: 'y', sign: Math.sign(localNormal.y) || 1 };
+                return { axis: 'z', sign: Math.sign(localNormal.z) || 1 };
+            }
+
+            beginExtrude(hit) {
+                const object = this.selectedObject;
+                if (!object.geometry.boundingBox) object.geometry.computeBoundingBox();
+                const localNormal = hit.face.normal.clone();
+                const { axis, sign } = this.getFaceAxis(localNormal);
+                const bb = object.geometry.boundingBox;
+                const halfExtent = axis === 'x' ? bb.max.x : axis === 'y' ? bb.max.y : bb.max.z;
+
+                this.controls.enabled = false;
+                this.extrudeState = {
+                    axis, sign, halfExtent,
+                    startScale: object.scale[axis],
+                    startPos: object.position.clone(),
+                    startClientY: null,
+                };
+                showToast(`Pull ${axis.toUpperCase()} face — drag up/down`, '⬆');
+            }
+
+            updateExtrude(clientY) {
+                const st = this.extrudeState;
+                const object = this.selectedObject;
+                if (!st || !object) return;
+                if (st.startClientY === null) { st.startClientY = clientY; return; }
+
+                const dragPx = st.startClientY - clientY; // up = pull out
+                const delta = dragPx * 0.01; // sensitivity
+                const newScale = Math.max(0.1, Math.min(6, st.startScale + delta));
+                const scaleDelta = newScale - st.startScale;
+
+                object.scale[st.axis] = newScale;
+
+                // Keep the opposite face anchored by shifting position along
+                // the face's world-space axis by half the size change.
+                const axisVec = new THREE.Vector3(
+                    st.axis === 'x' ? 1 : 0,
+                    st.axis === 'y' ? 1 : 0,
+                    st.axis === 'z' ? 1 : 0
+                ).applyQuaternion(object.quaternion);
+                const worldShift = st.sign * scaleDelta * st.halfExtent * 0.5;
+                object.position.copy(st.startPos).addScaledVector(axisVec, worldShift);
+
+                this.updateProperties(object);
+                if (object.userData.glowRing) {
+                    object.userData.glowRing.position.copy(object.position);
+                    object.userData.glowRing.position.y += 0.02;
+                }
+                state.hasChanges = true;
+            }
+
+            endExtrude() {
+                this.extrudeState = null;
+                this.controls.enabled = true;
+            }
+
             selectObject(object) {
                 // Deselect previous
                 if (this.selectedObject) {
@@ -1401,6 +1910,7 @@
                 }
 
                 this.selectedObject = object;
+                this.transformControls.detach();
 
                 if (object) {
                     object.material.emissiveIntensity = 0.25;
@@ -1421,21 +1931,68 @@
                     this.scene.add(ring);
                     object.userData.glowRing = ring;
 
+                    if (this.activeTool !== 'extrude') {
+                        this.transformControls.attach(object);
+                    }
+
                     this.updateProperties(object);
                     document.getElementById('properties-panel').classList.add('visible');
+                    document.getElementById('selected-section').style.display = 'block';
                 } else {
-                    document.getElementById('properties-panel').classList.remove('visible');
+                    document.getElementById('selected-section').style.display = 'none';
                 }
+                refreshOutliner();
             }
 
             updateProperties(object) {
                 if (!object) return;
                 document.getElementById('obj-name').textContent = object.userData.name || 'Object';
-                document.getElementById('obj-pos').textContent =
-                    `${object.position.x.toFixed(2)}, ${object.position.y.toFixed(2)}, ${object.position.z.toFixed(2)}`;
-                document.getElementById('obj-rot').textContent =
-                    `${THREE.MathUtils.radToDeg(object.rotation.x).toFixed(0)}°, ${THREE.MathUtils.radToDeg(object.rotation.y).toFixed(0)}°, ${THREE.MathUtils.radToDeg(object.rotation.z).toFixed(0)}°`;
-                document.getElementById('obj-scale').textContent = object.scale.x.toFixed(2);
+                const setVal = (id, v) => {
+                    const el = document.getElementById(id);
+                    if (el && document.activeElement !== el) el.value = v;
+                };
+                setVal('obj-pos-x', object.position.x.toFixed(2));
+                setVal('obj-pos-y', object.position.y.toFixed(2));
+                setVal('obj-pos-z', object.position.z.toFixed(2));
+                setVal('obj-rot-x', THREE.MathUtils.radToDeg(object.rotation.x).toFixed(0));
+                setVal('obj-rot-y', THREE.MathUtils.radToDeg(object.rotation.y).toFixed(0));
+                setVal('obj-rot-z', THREE.MathUtils.radToDeg(object.rotation.z).toFixed(0));
+                setVal('obj-scale-x', object.scale.x.toFixed(2));
+                setVal('obj-scale-y', object.scale.y.toFixed(2));
+                setVal('obj-scale-z', object.scale.z.toFixed(2));
+            }
+
+            setGizmoMode(mode) {
+                this.gizmoMode = mode;
+                this.activeTool = mode;
+                if (mode === 'extrude') {
+                    this.transformControls.detach();
+                } else {
+                    this.transformControls.setMode(mode);
+                    if (this.selectedObject) this.transformControls.attach(this.selectedObject);
+                }
+                document.getElementById('extrude-hint').classList.toggle('visible', mode === 'extrude');
+            }
+
+            duplicateSelected() {
+                if (!this.selectedObject) return null;
+                const src = this.selectedObject;
+                const clone = this.createMesh(src.userData.type, src.userData.color);
+                clone.position.copy(src.position).add(new THREE.Vector3(0.6, 0, 0.6));
+                clone.rotation.copy(src.rotation);
+                clone.scale.copy(src.scale);
+                clone.userData = {
+                    id: `obj_${Date.now()}`,
+                    name: `${src.userData.name} copy`,
+                    type: src.userData.type,
+                    color: src.userData.color,
+                    originalColor: src.userData.color,
+                };
+                this.scene.add(clone);
+                state.objects.push(clone);
+                this.selectObject(clone);
+                state.hasChanges = true;
+                return clone;
             }
 
             deleteSelected() {
@@ -1444,13 +2001,15 @@
                 if (obj.userData.glowRing) {
                     this.scene.remove(obj.userData.glowRing);
                 }
+                this.transformControls.detach();
                 this.scene.remove(obj);
                 const index = state.objects.indexOf(obj);
                 if (index > -1) {
                     state.objects.splice(index, 1);
                 }
                 this.selectedObject = null;
-                document.getElementById('properties-panel').classList.remove('visible');
+                document.getElementById('selected-section').style.display = 'none';
+                refreshOutliner();
             }
 
             zoom(factor) {
@@ -2062,245 +2621,8 @@
                     showToast('🗑️ Object deleted', '🗑️');
                 }
             }
-        });
-
-        // ---- 19. UI EVENT BINDINGS ----
-        function setupUI() {
-            // Save button
-            document.getElementById('save-btn').addEventListener('click', saveProject);
-
-            // Menu toggle
-            const menuToggle = document.getElementById('menu-toggle');
-            const saveMenu = document.getElementById('save-menu');
-
-            menuToggle.addEventListener('click', (e) => {
-                e.stopPropagation();
-                saveMenu.classList.toggle('open');
-            });
-
-            document.addEventListener('click', () => {
-                saveMenu.classList.remove('open');
-            });
-
-            // Menu items
-            document.querySelectorAll('#save-menu .item').forEach(item => {
-                item.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const action = item.dataset.action;
-                    switch (action) {
-                        case 'cloud':
-                            saveProject();
-                            break;
-                        case 'download':
-                            downloadProject();
-                            break;
-                        case 'gltf':
-                            exportGLTF();
-                            break;
-                        case 'obj':
-                            exportOBJ();
-                            break;
-                        case 'screenshot':
-                            takeScreenshot();
-                            break;
-                        case 'library':
-                            openLibrary();
-                            break;
-                        case 'share':
-                            shareProject();
-                            break;
-                    }
-                    saveMenu.classList.remove('open');
-                });
-            });
-
-            // Library close
-            document.getElementById('library-close').addEventListener('click', closeLibrary);
-            document.getElementById('library-overlay').addEventListener('click', (e) => {
-                if (e.target === e.currentTarget) closeLibrary();
-            });
-
-            // File input for loading (hidden)
-            const fileInput = document.createElement('input');
-            fileInput.type = 'file';
-            fileInput.accept = '.xena,application/json';
-            fileInput.style.display = 'none';
-            document.body.appendChild(fileInput);
-
-            fileInput.addEventListener('change', (e) => {
-                if (e.target.files.length > 0) {
-                    loadProject(e.target.files[0]);
-                }
-                fileInput.value = '';
-            });
-
-            // Load via drag & drop
-            document.addEventListener('dragover', (e) => e.preventDefault());
-            document.addEventListener('drop', (e) => {
-                e.preventDefault();
-                const files = e.dataTransfer.files;
-                if (files.length > 0 && files[0].name.endsWith('.xena')) {
-                    loadProject(files[0]);
-                }
-            });
-
-            // Add "Load" option to save menu programmatically
-            const loadItem = document.createElement('button');
-            loadItem.className = 'item';
-            loadItem.innerHTML = '<span class="icon">📂</span> Load Project';
-            loadItem.addEventListener('click', () => {
-                fileInput.click();
-                document.getElementById('save-menu').classList.remove('open');
-            });
-            const divider = document.querySelector('#save-menu .divider');
-            if (divider) {
-                divider.parentNode.insertBefore(loadItem, divider.nextSibling);
-            }
-        }
-
-        // ---- 20. AUTO-SAVE ----
-        function setupAutoSave() {
-            state.autoSaveInterval = setInterval(() => {
-                if (state.hasChanges && state.scene3D) {
-                    // Save draft to localStorage
-                    try {
-                        const data = getSceneData();
-                        localStorage.setItem('xena_draft', JSON.stringify(data));
-                    } catch (e) {
-                        // silent
-                    }
-                }
-            }, 30000); // every 30 seconds
-        }
-
-        function checkForDraft() {
-            try {
-                const draft = localStorage.getItem('xena_draft');
-                if (draft) {
-                    const data = JSON.parse(draft);
-                    const age = Date.now() - new Date(data.project?.modified || Date.now()).getTime();
-                    if (age < 86400000) { // less than 24 hours
-                        showToast('🔄 Found unsaved draft. Restoring...', '💾');
-                        setTimeout(() => {
-                            loadSceneData(data);
-                            showToast('✅ Draft restored', '💾');
-                        }, 500);
-                    }
-                }
-            } catch (e) {
-                // silent
-            }
-        }
-
-        // ---- 21. INITIALIZATION ----
-        async function init() {
-            try {
-                updateLoading(5, 'Initializing XENA engine...');
-
-                // Socket connection
-                updateLoading(15, 'Connecting to neural interface...');
-                initSocket();
-
-                // Wait for socket
-                await new Promise(resolve => {
-                    if (state.socket && state.socket.connected) {
-                        resolve();
-                    } else {
-                        const check = setInterval(() => {
-                            if (state.socket && state.socket.connected) {
-                                clearInterval(check);
-                                resolve();
-                            }
-                        }, 100);
-                        setTimeout(resolve, 3000); // fallback
-                    }
-                });
-
-                // 3D Scene
-                updateLoading(40, 'Building 3D workspace...');
-                const container = document.getElementById('three-container');
-                state.scene3D = new Scene3D(container);
-
-                // Hand renderer
-                updateLoading(55, 'Preparing hand tracking...');
-                const overlay = document.getElementById('hand-overlay');
-                state.handRenderer = new HandRenderer(overlay);
-
-                // Camera
-                updateLoading(65, 'Accessing camera...');
-                await setupCamera();
-
-                // UI
-                updateLoading(80, 'Loading interface...');
-                setupUI();
-                setupTouchSupport();
-                setupAutoSave();
-
-                // Check for drafts
-                setTimeout(checkForDraft, 1000);
-
-                // Resize hand overlay on camera container resize
-                const resizeObserver = new ResizeObserver(() => {
-                    if (state.handRenderer) state.handRenderer.resize();
-                });
-                const cameraContainer = document.getElementById('camera-container');
-                resizeObserver.observe(cameraContainer);
-
-                // Done
-                updateLoading(95, 'Calibrating gesture recognition...');
-                setTimeout(() => {
-                    updateLoading(100, '✨ XENA is ready!');
-                    setTimeout(() => {
-                        document.getElementById('loading').classList.add('hidden');
-                        showToast('🚀 Welcome to XENA! Use your hand to control the 3D space.', '✨');
-                        state.isLoading = false;
-                    }, 400);
-                }, 300);
-
-            } catch (err) {
-                console.error('Init error:', err);
-                updateLoading(100, '⚠️ Error loading XENA');
-                showToast('⚠️ Error initializing. Check console.', '❌');
-                setTimeout(() => {
-                    document.getElementById('loading').classList.add('hidden');
-                }, 1500);
-            }
-        }
-
-        // ---- 22. START ----
-        document.addEventListener('DOMContentLoaded', init);
-
-        // ---- 23. WINDOW CLEANUP ----
-        window.addEventListener('beforeunload', () => {
-            if (state.autoSaveInterval) {
-                clearInterval(state.autoSaveInterval);
-            }
-            if (state.cameraStream) {
-                state.cameraStream.getTracks().forEach(t => t.stop());
-            }
-            if (state.socket) {
-                state.socket.disconnect();
-            }
-        });
-
-        // ---- 24. EXPOSE GLOBALS FOR DEBUGGING ----
-        window.XENA = {
-            state,
-            saveProject,
-            loadProject,
-            takeScreenshot,
-            exportGLTF,
-            exportOBJ,
-            shareProject,
-            openLibrary,
-            getSceneData,
-            showToast,
-        };
-
-        console.log('🚀 XENA initialized successfully!');
-        console.log('📐 Version 1.0.0 - Professional 3D Gesture Workspace');
-        console.log('💡 Use your hand to control the 3D space!');
-        console.log('⌨️  Ctrl+S to save, Delete to remove selected');
-    </script>
-</body>
-</html>
+            // Blender-style gizmo shortcuts: G(move) R(rotate) S(scale) E(extrude)
+            const modeKeys = { g: 'translate', r: 'rotate', s: 'scale', e: 'extrude' };
+            const tag = (e.target && e.target.tagName) || '';
+            if (modeKeys[e.key.toLowerCase()] && tag !== 'INPUT' && !e.ctrlKey && !e.metaKey) {
+ 

@@ -1,1097 +1,1 @@
-"""
-╔═══════════════════════════════════════════════════════════════╗
-║                                                               ║
-║   ██╗  ██╗███████╗███╗   ██╗ █████╗                          ║
-║   ╚██╗██╔╝██╔════╝████╗  ██║██╔══██╗                         ║
-║    ╚███╔╝ █████╗  ██╔██╗ ██║███████║                         ║
-║    ██╔██╗ ██╔══╝  ██║╚██╗██║██╔══██║                         ║
-║   ██╔╝ ██╗███████╗██║ ╚████║██║  ██║                         ║
-║   ╚═╝  ╚═╝╚══════╝╚═╝  ╚═══╝╚═╝  ╚═╝                         ║
-║                                                               ║
-║   ✦ 3D GESTURE WORKSPACE ✦                                   ║
-║   Professional Hand-Controlled 3D Design Platform            ║
-║                                                               ║
-╚═══════════════════════════════════════════════════════════════╝
-
-PROJECT XENA - Complete Backend Server
-ONE FILE TO RULE THEM ALL
-All configuration hardcoded, no external dependencies except requirements.txt
-"""
-
-import os
-import sys
-import json
-import base64
-import uuid
-import logging
-import time
-import shutil
-from datetime import datetime
-from pathlib import Path
-from io import BytesIO
-import numpy as np
-import cv2
-import mediapipe as mp
-from flask import Flask, render_template, request, jsonify, send_file
-from flask_socketio import SocketIO, emit
-from flask_cors import CORS
-from PIL import Image
-
-# ================================================================
-#  1. HARDCODED CONFIGURATION
-# ================================================================
-
-# Server settings
-HOST = '0.0.0.0'
-PORT = 5000
-WS_PORT = 5001
-SECRET_KEY = 'xena-super-secret-key-2026-must-change-in-production'
-DEBUG = True
-
-# MediaPipe settings
-MP_MODEL_COMPLEXITY = 1
-MP_MIN_DETECTION_CONFIDENCE = 0.5
-MP_MIN_TRACKING_CONFIDENCE = 0.5
-
-# Performance settings
-MAX_FRAME_SIZE = 640 * 480
-FRAME_QUALITY = 60
-MAX_OBJECTS = 100
-MAX_FRAME_RATE = 30
-
-# Storage paths
-UPLOAD_FOLDER = './uploads'
-PROJECTS_FOLDER = './uploads/projects'
-LOGS_FOLDER = './logs'
-MODELS_FOLDER = './static/models'
-
-# Gesture settings
-GESTURE_CONFIDENCE_THRESHOLD = 0.6
-SMOOTHING_FACTOR = 0.6
-HISTORY_SIZE = 5
-
-# ================================================================
-#  2. CREATE FOLDERS
-# ================================================================
-
-Path(UPLOAD_FOLDER).mkdir(exist_ok=True)
-Path(PROJECTS_FOLDER).mkdir(exist_ok=True, parents=True)
-Path(LOGS_FOLDER).mkdir(exist_ok=True)
-Path(MODELS_FOLDER).mkdir(exist_ok=True, parents=True)
-
-# ================================================================
-#  3. LOGGING SETUP
-# ================================================================
-
-log_file = Path(LOGS_FOLDER) / 'xena.log'
-logging.basicConfig(
-    level=logging.DEBUG if DEBUG else logging.INFO,
-    format='%(asctime)s | %(levelname)s | %(message)s',
-    handlers=[
-        logging.FileHandler(log_file),
-        logging.StreamHandler(sys.stdout)
-    ]
-)
-logger = logging.getLogger('XENA')
-
-logger.info('═' * 70)
-logger.info('🚀 XENA Server Starting...')
-logger.info(f'📁 Upload folder: {UPLOAD_FOLDER}')
-logger.info(f'📁 Projects folder: {PROJECTS_FOLDER}')
-logger.info(f'📁 Logs folder: {LOGS_FOLDER}')
-logger.info(f'🌐 Host: {HOST}:{PORT}')
-logger.info(f'🔌 WebSocket Port: {WS_PORT}')
-logger.info('═' * 70)
-
-# ================================================================
-#  4. FLASK APP SETUP
-# ================================================================
-
-app = Flask(__name__, 
-            template_folder='templates',
-            static_folder='static')
-app.config['SECRET_KEY'] = SECRET_KEY
-app.config['DEBUG'] = DEBUG
-app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB
-
-# Enable CORS
-CORS(app, resources={r"/*": {"origins": "*"}})
-
-# SocketIO with eventlet
-socketio = SocketIO(
-    app,
-    cors_allowed_origins="*",
-    logger=DEBUG,
-    engineio_logger=DEBUG,
-    ping_timeout=60,
-    ping_interval=25,
-    async_mode='eventlet'
-)
-
-# ================================================================
-#  5. GESTURE RECOGNIZER CLASS
-# ================================================================
-
-class GestureRecognizer:
-    def __init__(self):
-        # MediaPipe 0.10.30+ import structure
-        self.mp_hands = mp.solutions.hands
-        self.mp_drawing = mp.solutions.drawing_utils
-        self.mp_drawing_styles = mp.solutions.drawing_styles
-        
-        self.hands = self.mp_hands.Hands(
-            static_image_mode=False,
-            max_num_hands=1,
-            model_complexity=1,  # Use integer, not variable
-            min_detection_confidence=0.5,
-            min_tracking_confidence=0.5
-        )
-        
-        self.gesture_history = []
-        self.history_size = HISTORY_SIZE
-        self.prev_gesture = '—'
-        self.smoothing_factor = SMOOTHING_FACTOR
-        
-        # Gesture names mapping
-        self.gesture_names = {
-            'fist': '✊ Fist',
-            'open': '🖐️ Open',
-            'point': '☝️ Point',
-            'two': '✌️ Two',
-            'pinch': '🤏 Pinch',
-            'ok': '👌 OK',
-            'shaka': '🤙 Shaka',
-            'stop': '✋ Stop',
-            'thumb_up': '👍 Thumb Up',
-            'thumb_down': '👎 Thumb Down',
-            'peace': '✌️ Peace',
-            'spock': '🖖 Spock'
-        }
-        
-        logger.info('🖐️ GestureRecognizer initialized with MediaPipe')
-    
-    def process_frame(self, image_bytes):
-        """Process image bytes and return landmarks and gestures"""
-        try:
-            # Decode image
-            np_arr = np.frombuffer(image_bytes, np.uint8)
-            image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
-            
-            if image is None:
-                return None, None
-            
-            # Convert to RGB
-            image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            image_rgb.flags.writeable = False
-            
-            # Process with MediaPipe
-            results = self.hands.process(image_rgb)
-            
-            if not results.multi_hand_landmarks:
-                return None, None
-            
-            # Get landmarks
-            landmarks = results.multi_hand_landmarks[0]
-            h, w, _ = image.shape
-            
-            # Extract landmark coordinates
-            landmark_list = []
-            for lm in landmarks.landmark:
-                landmark_list.append({
-                    'x': lm.x,
-                    'y': lm.y,
-                    'z': lm.z
-                })
-            
-            # Recognize gesture
-            gesture = self.recognize_gesture(landmarks, landmark_list)
-            
-            # Calculate hand orientation
-            orientation = self.get_hand_orientation(landmark_list)
-            
-            # Calculate hand position (for dragging)
-            wrist = landmark_list[0] if landmark_list else None
-            hand_pos = {
-                'x': wrist['x'] if wrist else 0,
-                'y': wrist['y'] if wrist else 0,
-                'z': wrist['z'] if wrist else 0
-            }
-            
-            # Calculate gesture parameters (intensity, etc.)
-            params = self.get_gesture_parameters(landmark_list, gesture)
-            
-            return {
-                'landmarks': landmark_list,
-                'gesture': gesture,
-                'orientation': orientation,
-                'position': hand_pos,
-                'params': params,
-                'timestamp': time.time()
-            }
-            
-        except Exception as e:
-            logger.error(f'Error processing frame: {e}')
-            return None, None
-    
-    def recognize_gesture(self, landmarks, landmark_list):
-        """Recognize gesture from hand landmarks"""
-        if not landmark_list or len(landmark_list) < 21:
-            return '—'
-        
-        # Extract finger landmarks
-        thumb_tip = landmark_list[4]
-        thumb_ip = landmark_list[3]
-        thumb_mcp = landmark_list[2]
-        
-        index_tip = landmark_list[8]
-        index_pip = landmark_list[6]
-        index_mcp = landmark_list[5]
-        
-        middle_tip = landmark_list[12]
-        middle_pip = landmark_list[10]
-        middle_mcp = landmark_list[9]
-        
-        ring_tip = landmark_list[16]
-        ring_pip = landmark_list[14]
-        
-        pinky_tip = landmark_list[20]
-        pinky_pip = landmark_list[18]
-        
-        wrist = landmark_list[0]
-        
-        # Calculate finger angles and positions
-        # This is a simplified approach - professional version would use more sophisticated methods
-        
-        # Check if fingers are extended (using y-coordinate relative to palm)
-        thumb_extended = thumb_tip['y'] < thumb_ip['y'] - 0.02
-        index_extended = index_tip['y'] < index_pip['y'] - 0.02
-        middle_extended = middle_tip['y'] < middle_pip['y'] - 0.02
-        ring_extended = ring_tip['y'] < ring_pip['y'] - 0.02
-        pinky_extended = pinky_tip['y'] < pinky_pip['y'] - 0.02
-        
-        # Count extended fingers
-        extended_count = sum([index_extended, middle_extended, ring_extended, pinky_extended])
-        
-        # Check fist (all fingers curled)
-        is_fist = not index_extended and not middle_extended and not ring_extended and not pinky_extended and not thumb_extended
-        
-        # Check open hand (all fingers extended)
-        is_open = index_extended and middle_extended and ring_extended and pinky_extended and thumb_extended
-        
-        # Check point (index extended, others curled)
-        is_point = index_extended and not middle_extended and not ring_extended and not pinky_extended
-        
-        # Check two fingers (index and middle extended)
-        is_two = index_extended and middle_extended and not ring_extended and not pinky_extended
-        
-        # Check peace sign (index and middle extended, separated)
-        is_peace = index_extended and middle_extended and not ring_extended and not pinky_extended and thumb_extended
-        
-        # Check OK sign (thumb and index touching)
-        thumb_index_dist = ((thumb_tip['x'] - index_tip['x']) ** 2 + 
-                           (thumb_tip['y'] - index_tip['y']) ** 2) ** 0.5
-        is_ok = thumb_index_dist < 0.05 and not middle_extended and not ring_extended and not pinky_extended
-        
-        # Check pinch (thumb and index close)
-        is_pinch = thumb_index_dist < 0.08 and index_extended
-        
-        # Check shaka (thumb and pinky extended)
-        is_shaka = thumb_extended and pinky_extended and not index_extended and not middle_extended and not ring_extended
-        
-        # Check stop (open hand with fingers together)
-        is_stop = is_open and (index_tip['x'] - pinky_tip['x']) < 0.1
-        
-        # Check thumb up
-        is_thumb_up = thumb_extended and not index_extended and not middle_extended and not ring_extended and not pinky_extended
-        
-        # Check thumb down
-        is_thumb_down = thumb_extended and not index_extended and not middle_extended and not ring_extended and not pinky_extended and thumb_tip['y'] > thumb_mcp['y']
-        
-        # Check spock (index, middle, ring extended)
-        is_spock = index_extended and middle_extended and ring_extended and not pinky_extended
-        
-        # Determine gesture with priority
-        gesture = '—'
-        
-        if is_fist:
-            gesture = 'fist'
-        elif is_open:
-            gesture = 'open'
-        elif is_point:
-            gesture = 'point'
-        elif is_two:
-            gesture = 'two'
-        elif is_peace:
-            gesture = 'peace'
-        elif is_ok:
-            gesture = 'ok'
-        elif is_pinch:
-            gesture = 'pinch'
-        elif is_shaka:
-            gesture = 'shaka'
-        elif is_stop:
-            gesture = 'stop'
-        elif is_thumb_up:
-            gesture = 'thumb_up'
-        elif is_thumb_down:
-            gesture = 'thumb_down'
-        elif is_spock:
-            gesture = 'spock'
-        
-        # Apply smoothing
-        self.gesture_history.append(gesture)
-        if len(self.gesture_history) > self.history_size:
-            self.gesture_history.pop(0)
-        
-        # Get most frequent gesture in history
-        if self.gesture_history:
-            from collections import Counter
-            counter = Counter(self.gesture_history)
-            most_common = counter.most_common(1)[0]
-            
-            # Only use if it appears enough times
-            if most_common[1] >= max(2, self.history_size // 2):
-                smoothed_gesture = most_common[0]
-            else:
-                smoothed_gesture = self.prev_gesture
-        else:
-            smoothed_gesture = gesture
-        
-        self.prev_gesture = smoothed_gesture
-        return smoothed_gesture
-    
-    def get_hand_orientation(self, landmark_list):
-        """Calculate hand orientation (rotation angles)"""
-        if not landmark_list or len(landmark_list) < 21:
-            return {'roll': 0, 'pitch': 0, 'yaw': 0}
-        
-        wrist = landmark_list[0]
-        index_mcp = landmark_list[5]
-        pinky_mcp = landmark_list[17]
-        middle_mcp = landmark_list[9]
-        
-        # Calculate roll (rotation around wrist-to-middle axis)
-        dx = pinky_mcp['x'] - index_mcp['x']
-        dy = pinky_mcp['y'] - index_mcp['y']
-        roll = np.arctan2(dy, dx)
-        
-        # Calculate pitch (up/down tilt)
-        dx = middle_mcp['x'] - wrist['x']
-        dy = middle_mcp['y'] - wrist['y']
-        dz = middle_mcp['z'] - wrist['z']
-        pitch = np.arctan2(dy, np.sqrt(dx**2 + dz**2))
-        
-        # Calculate yaw (left/right rotation)
-        yaw = np.arctan2(dz, dx)
-        
-        return {
-            'roll': float(roll),
-            'pitch': float(pitch),
-            'yaw': float(yaw)
-        }
-    
-    def get_gesture_parameters(self, landmark_list, gesture):
-        """Get additional parameters for gesture (intensity, value, etc.)"""
-        params = {
-            'intensity': 0.5,
-            'value': 0.0,
-            'speed': 0.0,
-            'position_delta': {'x': 0, 'y': 0, 'z': 0}
-        }
-        
-        if not landmark_list or len(landmark_list) < 21:
-            return params
-        
-        # Calculate fist tightness (for zoom)
-        if gesture == 'fist':
-            # Measure distance from fingertips to palm
-            palm_center = landmark_list[0]  # wrist as palm center
-            tips = [landmark_list[4], landmark_list[8], landmark_list[12], landmark_list[16], landmark_list[20]]
-            distances = []
-            for tip in tips:
-                dist = ((tip['x'] - palm_center['x']) ** 2 + 
-                       (tip['y'] - palm_center['y']) ** 2) ** 0.5
-                distances.append(dist)
-            avg_dist = np.mean(distances) if distances else 0.3
-            # Tightness: 0 = open, 1 = closed fist
-            params['intensity'] = max(0, min(1, 1 - avg_dist * 3))
-            params['value'] = params['intensity']
-        
-        # For open hand, spread determines zoom intensity
-        elif gesture == 'open':
-            # Measure spread of fingers
-            spread = 0
-            if len(landmark_list) > 4:
-                index_tip = landmark_list[8]
-                pinky_tip = landmark_list[20]
-                spread = ((index_tip['x'] - pinky_tip['x']) ** 2 + 
-                         (index_tip['y'] - pinky_tip['y']) ** 2) ** 0.5
-            params['intensity'] = max(0, min(1, spread * 2))
-            params['value'] = params['intensity']
-        
-        # For pinch, value is the distance between thumb and index
-        elif gesture == 'pinch':
-            thumb_tip = landmark_list[4]
-            index_tip = landmark_list[8]
-            dist = ((thumb_tip['x'] - index_tip['x']) ** 2 + 
-                   (thumb_tip['y'] - index_tip['y']) ** 2) ** 0.5
-            params['value'] = max(0, min(1, 1 - dist * 5))
-            params['intensity'] = params['value']
-        
-        # For point, direction indicates position
-        elif gesture == 'point':
-            index_tip = landmark_list[8]
-            index_mcp = landmark_list[5]
-            direction = {
-                'x': index_tip['x'] - index_mcp['x'],
-                'y': index_tip['y'] - index_mcp['y'],
-                'z': index_tip['z'] - index_mcp['z']
-            }
-            params['direction'] = direction
-        
-        return params
-    
-    def close(self):
-        """Clean up resources"""
-        self.hands.close()
-        logger.info('🖐️ GestureRecognizer closed')
-
-
-# ================================================================
-#  6. GLOBAL INSTANCES
-# ================================================================
-
-gesture_recognizer = GestureRecognizer()
-
-
-# ================================================================
-#  7. FLASK ROUTES
-# ================================================================
-
-@app.route('/')
-def index():
-    """Serve the main application"""
-    logger.info('📄 Serving index page')
-    return render_template('3d.html')
-
-
-@app.route('/health')
-def health():
-    """Health check endpoint"""
-    return jsonify({
-        'status': 'healthy',
-        'timestamp': datetime.now().isoformat(),
-        'version': '1.0.0',
-        'name': 'XENA'
-    })
-
-
-@app.route('/api/save', methods=['POST'])
-def save_project():
-    """Save project to server"""
-    try:
-        data = request.json
-        
-        if not data:
-            return jsonify({'error': 'No data provided'}), 400
-        
-        # Generate project ID
-        project_id = data.get('id', str(uuid.uuid4()))
-        project_name = data.get('project', {}).get('name', 'Untitled')
-        
-        # Add metadata
-        data['_metadata'] = {
-            'saved_at': datetime.now().isoformat(),
-            'server_version': '1.0.0',
-            'id': project_id
-        }
-        
-        # Save to file
-        filename = Path(PROJECTS_FOLDER) / f'{project_id}.xena'
-        with open(filename, 'w') as f:
-            json.dump(data, f, indent=2)
-        
-        logger.info(f'💾 Project saved: {project_name} ({project_id})')
-        
-        return jsonify({
-            'success': True,
-            'id': project_id,
-            'name': project_name,
-            'message': 'Project saved successfully'
-        })
-        
-    except Exception as e:
-        logger.error(f'Error saving project: {e}')
-        return jsonify({'error': str(e)}), 500
-
-
-@app.route('/api/load/<project_id>', methods=['GET'])
-def load_project(project_id):
-    """Load project from server"""
-    try:
-        filename = Path(PROJECTS_FOLDER) / f'{project_id}.xena'
-        
-        if not filename.exists():
-            return jsonify({'error': 'Project not found'}), 404
-        
-        with open(filename, 'r') as f:
-            data = json.load(f)
-        
-        logger.info(f'📂 Project loaded: {project_id}')
-        return jsonify(data)
-        
-    except Exception as e:
-        logger.error(f'Error loading project: {e}')
-        return jsonify({'error': str(e)}), 500
-
-
-@app.route('/api/list_projects', methods=['GET'])
-def list_projects():
-    """List all saved projects"""
-    try:
-        projects = []
-        for file in Path(PROJECTS_FOLDER).glob('*.xena'):
-            try:
-                with open(file, 'r') as f:
-                    data = json.load(f)
-                projects.append({
-                    'id': file.stem,
-                    'name': data.get('project', {}).get('name', 'Untitled'),
-                    'objects': len(data.get('objects', [])),
-                    'date': data.get('_metadata', {}).get('saved_at', 
-                           data.get('project', {}).get('modified', 'Unknown'))
-                })
-            except:
-                continue
-        
-        # Sort by date (newest first)
-        projects.sort(key=lambda x: x['date'], reverse=True)
-        
-        return jsonify(projects)
-        
-    except Exception as e:
-        logger.error(f'Error listing projects: {e}')
-        return jsonify([])
-
-
-@app.route('/api/delete/<project_id>', methods=['DELETE'])
-def delete_project(project_id):
-    """Delete a project"""
-    try:
-        filename = Path(PROJECTS_FOLDER) / f'{project_id}.xena'
-        
-        if not filename.exists():
-            return jsonify({'error': 'Project not found'}), 404
-        
-        filename.unlink()
-        logger.info(f'🗑️ Project deleted: {project_id}')
-        
-        return jsonify({'success': True, 'message': 'Project deleted'})
-        
-    except Exception as e:
-        logger.error(f'Error deleting project: {e}')
-        return jsonify({'error': str(e)}), 500
-
-
-@app.route('/api/export/gltf', methods=['POST'])
-def export_gltf():
-    """Export project as GLTF (placeholder)"""
-    try:
-        # This is a placeholder - real GLTF export would require more work
-        # For now, we return a simple JSON export
-        data = request.json or {}
-        
-        # Create a simple GLTF-like structure
-        gltf_data = {
-            'asset': {
-                'version': '2.0',
-                'generator': 'XENA v1.0.0'
-            },
-            'scene': 0,
-            'scenes': [{
-                'nodes': [0]
-            }],
-            'nodes': [{
-                'name': 'Exported from XENA',
-                'children': []
-            }],
-            'meshes': [],
-            'materials': [],
-            'buffers': [],
-            'bufferViews': [],
-            'accessors': []
-        }
-        
-        # Add objects as nodes
-        objects = data.get('objects', [])
-        for i, obj in enumerate(objects):
-            gltf_data['nodes'].append({
-                'name': obj.get('name', f'Object_{i}'),
-                'translation': obj.get('position', [0, 0, 0]),
-                'rotation': obj.get('rotation', [0, 0, 0, 1]),
-                'scale': obj.get('scale', [1, 1, 1])
-            })
-        
-        # Save to file
-        export_id = str(uuid.uuid4())
-        filename = Path(PROJECTS_FOLDER) / f'export_{export_id}.gltf'
-        with open(filename, 'w') as f:
-            json.dump(gltf_data, f, indent=2)
-        
-        logger.info(f'📤 GLTF export created: {export_id}')
-        
-        return send_file(
-            filename,
-            as_attachment=True,
-            download_name=f'xena_export_{export_id}.gltf',
-            mimetype='model/gltf+json'
-        )
-        
-    except Exception as e:
-        logger.error(f'Error exporting GLTF: {e}')
-        return jsonify({'error': str(e)}), 500
-
-
-@app.route('/api/export/obj', methods=['POST'])
-def export_obj():
-    """Export project as OBJ (placeholder)"""
-    try:
-        # This is a placeholder - real OBJ export would require more work
-        data = request.json or {}
-        
-        obj_content = f"# XENA Export\n"
-        obj_content += f"# Generated: {datetime.now().isoformat()}\n\n"
-        
-        objects = data.get('objects', [])
-        vertex_count = 1
-        
-        for i, obj in enumerate(objects):
-            obj_content += f"o {obj.get('name', f'Object_{i}')}\n"
-            
-            # Simple placeholder vertices (a cube)
-            for v in [
-                [-0.5, -0.5, -0.5],
-                [0.5, -0.5, -0.5],
-                [0.5, 0.5, -0.5],
-                [-0.5, 0.5, -0.5],
-                [-0.5, -0.5, 0.5],
-                [0.5, -0.5, 0.5],
-                [0.5, 0.5, 0.5],
-                [-0.5, 0.5, 0.5]
-            ]:
-                x, y, z = v
-                obj_content += f"v {x:.3f} {y:.3f} {z:.3f}\n"
-            
-            obj_content += "\n"
-            
-            # Faces
-            faces = [
-                [1, 2, 3, 4],
-                [5, 8, 7, 6],
-                [1, 5, 6, 2],
-                [2, 6, 7, 3],
-                [3, 7, 8, 4],
-                [4, 8, 5, 1]
-            ]
-            
-            for face in faces:
-                obj_content += f"f {face[0]+vertex_count} {face[1]+vertex_count} {face[2]+vertex_count} {face[3]+vertex_count}\n"
-            
-            vertex_count += 8
-            obj_content += "\n"
-        
-        # Save to file
-        export_id = str(uuid.uuid4())
-        filename = Path(PROJECTS_FOLDER) / f'export_{export_id}.obj'
-        with open(filename, 'w') as f:
-            f.write(obj_content)
-        
-        logger.info(f'📤 OBJ export created: {export_id}')
-        
-        return send_file(
-            filename,
-            as_attachment=True,
-            download_name=f'xena_export_{export_id}.obj',
-            mimetype='text/plain'
-        )
-        
-    except Exception as e:
-        logger.error(f'Error exporting OBJ: {e}')
-        return jsonify({'error': str(e)}), 500
-
-
-@app.route('/api/screenshot', methods=['POST'])
-def save_screenshot():
-    """Save screenshot from client"""
-    try:
-        data = request.json
-        if not data or 'image' not in data:
-            return jsonify({'error': 'No image data'}), 400
-        
-        # Decode base64 image
-        image_data = data['image'].split(',')[1] if ',' in data['image'] else data['image']
-        image_bytes = base64.b64decode(image_data)
-        image = Image.open(BytesIO(image_bytes))
-        
-        # Save to file
-        screenshot_id = str(uuid.uuid4())
-        filename = Path(PROJECTS_FOLDER) / f'screenshot_{screenshot_id}.png'
-        image.save(filename)
-        
-        logger.info(f'🖼️ Screenshot saved: {screenshot_id}')
-        
-        return jsonify({
-            'success': True,
-            'id': screenshot_id,
-            'url': f'/api/screenshot/{screenshot_id}'
-        })
-        
-    except Exception as e:
-        logger.error(f'Error saving screenshot: {e}')
-        return jsonify({'error': str(e)}), 500
-
-
-@app.route('/api/screenshot/<screenshot_id>', methods=['GET'])
-def get_screenshot(screenshot_id):
-    """Get screenshot by ID"""
-    try:
-        filename = Path(PROJECTS_FOLDER) / f'screenshot_{screenshot_id}.png'
-        
-        if not filename.exists():
-            return jsonify({'error': 'Screenshot not found'}), 404
-        
-        return send_file(filename, mimetype='image/png')
-        
-    except Exception as e:
-        logger.error(f'Error getting screenshot: {e}')
-        return jsonify({'error': str(e)}), 500
-
-
-# ================================================================
-#  8. WEBSOCKET EVENTS
-# ================================================================
-
-@socketio.on('connect')
-def handle_connect():
-    """Handle client connection"""
-    logger.info(f'🔗 Client connected: {request.sid}')
-    emit('connected', {
-        'message': 'Welcome to XENA!',
-        'timestamp': datetime.now().isoformat()
-    })
-
-
-@socketio.on('disconnect')
-def handle_disconnect():
-    """Handle client disconnection"""
-    logger.info(f'🔌 Client disconnected: {request.sid}')
-
-
-@socketio.on('frame')
-def handle_frame(data):
-    """Process video frame from client"""
-    try:
-        # Check if data is base64 string or raw bytes
-        if isinstance(data, str):
-            # Base64 encoded
-            if data.startswith('data:image'):
-                data = data.split(',')[1]
-            image_bytes = base64.b64decode(data)
-        else:
-            # Raw bytes
-            image_bytes = data
-        
-        # Process with gesture recognizer
-        result = gesture_recognizer.process_frame(image_bytes)
-        
-        if result and result['landmarks']:
-            # Prepare response
-            response = {
-                'landmarks': result['landmarks'],
-                'gesture': result['gesture'],
-                'orientation': result['orientation'],
-                'position': result['position'],
-                'params': result['params']
-            }
-            
-            # Generate actions based on gesture
-            actions = generate_gesture_actions(result)
-            if actions:
-                response['actions'] = actions
-            
-            # Send back to client
-            emit('hand_landmarks', response)
-            
-    except Exception as e:
-        logger.error(f'Error processing frame: {e}')
-
-
-@socketio.on('save_project')
-def handle_save_project(data):
-    """Handle save project via WebSocket"""
-    try:
-        project_id = data.get('id', str(uuid.uuid4()))
-        project_name = data.get('project', {}).get('name', 'Untitled')
-        
-        # Save to file
-        filename = Path(PROJECTS_FOLDER) / f'{project_id}.xena'
-        with open(filename, 'w') as f:
-            json.dump(data, f, indent=2)
-        
-        logger.info(f'💾 Project saved via WebSocket: {project_name} ({project_id})')
-        
-        emit('save_response', {
-            'success': True,
-            'id': project_id,
-            'name': project_name,
-            'message': 'Project saved successfully'
-        })
-        
-    except Exception as e:
-        logger.error(f'Error saving project via WebSocket: {e}')
-        emit('save_response', {
-            'success': False,
-            'error': str(e)
-        })
-
-
-@socketio.on('load_project')
-def handle_load_project(data):
-    """Handle load project via WebSocket"""
-    try:
-        project_id = data.get('id')
-        if not project_id:
-            emit('load_response', {'error': 'No project ID provided'})
-            return
-        
-        filename = Path(PROJECTS_FOLDER) / f'{project_id}.xena'
-        
-        if not filename.exists():
-            emit('load_response', {'error': 'Project not found'})
-            return
-        
-        with open(filename, 'r') as f:
-            project_data = json.load(f)
-        
-        logger.info(f'📂 Project loaded via WebSocket: {project_id}')
-        
-        emit('load_response', {
-            'success': True,
-            'data': project_data
-        })
-        
-    except Exception as e:
-        logger.error(f'Error loading project via WebSocket: {e}')
-        emit('load_response', {'error': str(e)})
-
-
-@socketio.on('list_projects')
-def handle_list_projects():
-    """Handle list projects via WebSocket"""
-    try:
-        projects = []
-        for file in Path(PROJECTS_FOLDER).glob('*.xena'):
-            try:
-                with open(file, 'r') as f:
-                    data = json.load(f)
-                projects.append({
-                    'id': file.stem,
-                    'name': data.get('project', {}).get('name', 'Untitled'),
-                    'objects': len(data.get('objects', [])),
-                    'date': data.get('_metadata', {}).get('saved_at',
-                           data.get('project', {}).get('modified', 'Unknown'))
-                })
-            except:
-                continue
-        
-        projects.sort(key=lambda x: x['date'], reverse=True)
-        emit('projects_list', projects)
-        
-    except Exception as e:
-        logger.error(f'Error listing projects via WebSocket: {e}')
-        emit('projects_list', [])
-
-
-@socketio.on('delete_project')
-def handle_delete_project(data):
-    """Handle delete project via WebSocket"""
-    try:
-        project_id = data.get('id')
-        if not project_id:
-            emit('delete_response', {'error': 'No project ID provided'})
-            return
-        
-        filename = Path(PROJECTS_FOLDER) / f'{project_id}.xena'
-        
-        if not filename.exists():
-            emit('delete_response', {'error': 'Project not found'})
-            return
-        
-        filename.unlink()
-        logger.info(f'🗑️ Project deleted via WebSocket: {project_id}')
-        
-        emit('delete_response', {
-            'success': True,
-            'message': 'Project deleted'
-        })
-        
-    except Exception as e:
-        logger.error(f'Error deleting project via WebSocket: {e}')
-        emit('delete_response', {'error': str(e)})
-
-
-# ================================================================
-#  9. GESTURE ACTION GENERATOR
-# ================================================================
-
-def generate_gesture_actions(result):
-    """Generate actions based on recognized gesture"""
-    if not result:
-        return []
-    
-    gesture = result['gesture']
-    params = result.get('params', {})
-    orientation = result.get('orientation', {})
-    position = result.get('position', {})
-    
-    actions = []
-    
-    # Fist: Zoom out
-    if gesture == 'fist':
-        intensity = params.get('intensity', 0.5)
-        value = params.get('value', 0.5)
-        actions.append({
-            'action': 'zoom',
-            'value': -intensity * 0.5,
-            'intensity': intensity
-        })
-    
-    # Open: Zoom in
-    elif gesture == 'open':
-        intensity = params.get('intensity', 0.5)
-        value = params.get('value', 0.5)
-        actions.append({
-            'action': 'zoom',
-            'value': intensity * 0.5,
-            'intensity': intensity
-        })
-    
-    # Point: Select/Hover
-    elif gesture == 'point':
-        # Use position for selection
-        actions.append({
-            'action': 'select',
-            'index': -1,  # Will be determined by client using raycasting
-            'position': position
-        })
-    
-    # Two fingers: Drag & Drop
-    elif gesture == 'two' or gesture == 'peace':
-        # Use hand movement for dragging
-        dx = position.get('x', 0) * 100
-        dy = position.get('y', 0) * 100
-        dz = position.get('z', 0) * 10
-        actions.append({
-            'action': 'drag',
-            'dx': dx,
-            'dy': dy,
-            'dz': dz,
-            'position': position
-        })
-    
-    # Pinch: Scale
-    elif gesture == 'pinch':
-        value = params.get('value', 0.5)
-        actions.append({
-            'action': 'scale',
-            'value': (value - 0.5) * 0.02,
-            'intensity': value
-        })
-    
-    # OK: Right click / Properties
-    elif gesture == 'ok':
-        actions.append({
-            'action': 'right_click',
-            'gesture': 'ok'
-        })
-    
-    # Shaka: Rotate view
-    elif gesture == 'shaka':
-        roll = orientation.get('roll', 0)
-        pitch = orientation.get('pitch', 0)
-        yaw = orientation.get('yaw', 0)
-        actions.append({
-            'action': 'rotate',
-            'x': roll * 2,
-            'y': pitch * 2,
-            'z': yaw * 2
-        })
-    
-    # Thumb Up: Save
-    elif gesture == 'thumb_up':
-        actions.append({
-            'action': 'save',
-            'gesture': 'thumb_up'
-        })
-    
-    # Thumb Down: Reset view
-    elif gesture == 'thumb_down':
-        actions.append({
-            'action': 'reset',
-            'gesture': 'thumb_down'
-        })
-    
-    # Stop: Delete selected
-    elif gesture == 'stop':
-        actions.append({
-            'action': 'delete',
-            'gesture': 'stop'
-        })
-    
-    # Spock: Undo
-    elif gesture == 'spock':
-        actions.append({
-            'action': 'undo',
-            'gesture': 'spock'
-        })
-    
-    return actions
-
-
-# ================================================================
-#  10. MAIN ENTRY POINT
-# ================================================================
-
-if __name__ == '__main__':
-    try:
-        logger.info('═' * 70)
-        logger.info('🚀 XENA Server Starting...')
-        logger.info(f'🌐 HTTP: http://{HOST}:{PORT}')
-        logger.info(f'🔌 WebSocket: ws://{HOST}:{WS_PORT}')
-        logger.info('═' * 70)
-        logger.info('📌 Press Ctrl+C to stop')
-        logger.info('═' * 70)
-        
-        # Run server
-        socketio.run(
-            app,
-            host=HOST,
-            port=PORT,
-            debug=DEBUG,
-            use_reloader=DEBUG,
-            log_output=DEBUG
-        )
-        
-    except KeyboardInterrupt:
-        logger.info('\n🛑 Server stopped by user')
-        gesture_recognizer.close()
-        sys.exit(0)
-    except Exception as e:
-        logger.error(f'❌ Server error: {e}')
-        gesture_recognizer.close()
-        sys.exit(1)
-
-
-# ================================================================
-#  END OF FILE
-# ================================================================
+import eventleteventlet.monkey_patch()# mediapipe's tasks/python/core/async_result_dispatcher.py uses a bare# `queue.Queue[T]` annotation, which only works on Python 3.12+. On 3.11# (Render's current default) that line crashes `import mediapipe` outright.# This patches Queue to support subscripting the same way 3.12 does natively.import queue as _queueif not hasattr(_queue.Queue, "__class_getitem__"):    from types import GenericAlias as _GenericAlias    _queue.Queue.__class_getitem__ = classmethod(_GenericAlias)"""╔═══════════════════════════════════════════════════════════════╗║                                                               ║║   ██╗  ██╗███████╗███╗   ██╗ █████╗                          ║║   ╚██╗██╔╝██╔════╝████╗  ██║██╔══██╗                         ║║    ╚███╔╝ █████╗  ██╔██╗ ██║███████║                         ║║    ██╔██╗ ██╔══╝  ██║╚██╗██║██╔══██║                         ║║   ██╔╝ ██╗███████╗██║ ╚████║██║  ██║                         ║║   ╚═╝  ╚═╝╚══════╝╚═╝  ╚═══╝╚═╝  ╚═╝                         ║║                                                               ║║   ✦ 3D GESTURE WORKSPACE ✦                                   ║║   Professional Hand-Controlled 3D Design Platform            ║║                                                               ║╚═══════════════════════════════════════════════════════════════╝PROJECT XENA - Complete Backend ServerOptimized for Render.com Deployment"""import osimport sysimport jsonimport base64import uuidimport loggingimport timeimport shutilfrom datetime import datetimefrom pathlib import Pathfrom io import BytesIO# Third-party importsimport numpy as npimport cv2import mediapipe as mpfrom flask import Flask, render_template, request, jsonify, send_file, send_from_directoryfrom flask_socketio import SocketIO, emitfrom flask_cors import CORSfrom PIL import Image# ================================================================#  1. HARDCODED CONFIGURATION# ================================================================# Server settings - Read from environment for RenderHOST = '0.0.0.0'PORT = int(os.environ.get('PORT', 10000))SECRET_KEY = os.environ.get('SECRET_KEY', 'xena-super-secret-key-2026-must-change-in-production')DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'# MediaPipe settingsMP_MODEL_COMPLEXITY = 1MP_MIN_DETECTION_CONFIDENCE = 0.5MP_MIN_TRACKING_CONFIDENCE = 0.5# Performance settingsMAX_FRAME_SIZE = 640 * 480FRAME_QUALITY = 60MAX_OBJECTS = 100MAX_FRAME_RATE = 30# Storage paths - Use environment variable for persistent storage if availableBASE_DIR = Path(os.environ.get('BASE_DIR', '.'))UPLOAD_FOLDER = BASE_DIR / 'uploads'PROJECTS_FOLDER = UPLOAD_FOLDER / 'projects'LOGS_FOLDER = BASE_DIR / 'logs'MODELS_FOLDER = BASE_DIR / 'static' / 'models'# Gesture settingsGESTURE_CONFIDENCE_THRESHOLD = 0.6SMOOTHING_FACTOR = 0.6HISTORY_SIZE = 5# ================================================================#  2. CREATE FOLDERS# ================================================================UPLOAD_FOLDER.mkdir(exist_ok=True)PROJECTS_FOLDER.mkdir(exist_ok=True, parents=True)LOGS_FOLDER.mkdir(exist_ok=True)MODELS_FOLDER.mkdir(exist_ok=True, parents=True)# ================================================================#  3. LOGGING SETUP# ================================================================log_file = LOGS_FOLDER / 'xena.log'logging.basicConfig(    level=logging.DEBUG if DEBUG else logging.INFO,    format='%(asctime)s | %(levelname)s | %(message)s',    handlers=[        logging.FileHandler(log_file),        logging.StreamHandler(sys.stdout)    ])logger = logging.getLogger('XENA')logger.info('═' * 70)logger.info('🚀 XENA Server Starting...')logger.info(f'📁 Upload folder: {UPLOAD_FOLDER}')logger.info(f'📁 Projects folder: {PROJECTS_FOLDER}')logger.info(f'📁 Logs folder: {LOGS_FOLDER}')logger.info(f'🌐 Host: {HOST}:{PORT}')logger.info(f'🔧 Debug mode: {DEBUG}')logger.info('═' * 70)# ================================================================#  4. FLASK APP SETUP - SMART TEMPLATE / STATIC DETECTION# ================================================================# Get the absolute path to the current file's directoryCURRENT_DIR = Path(__file__).parent.absolute()# ------------------------------------------------# Smart detection of the real templates folder# (handles trailing spaces and other name issues)# ------------------------------------------------TEMPLATES_DIR = None# 1. Prefer the clean nameclean_templates = CURRENT_DIR / 'templates'if (clean_templates / '3d.html').exists():    TEMPLATES_DIR = clean_templates# 2. Look for any folder that starts with "templates" and contains 3d.htmlif TEMPLATES_DIR is None:    for p in CURRENT_DIR.iterdir():        if p.is_dir() and p.name.startswith('templates') and (p / '3d.html').exists():            TEMPLATES_DIR = p            logger.warning(f'⚠️ Found templates folder with unusual name: {repr(p.name)}')            break# 3. Fallback – create clean one if nothing foundif TEMPLATES_DIR is None:    TEMPLATES_DIR = clean_templates    TEMPLATES_DIR.mkdir(exist_ok=True)    logger.warning(f'⚠️ Created missing templates folder: {TEMPLATES_DIR}')logger.info(f'📁 Templates folder: {TEMPLATES_DIR}')logger.info(f'📄 3d.html exists: {(TEMPLATES_DIR / "3d.html").exists()}')logger.info(f'🔍 CURRENT_DIR contents (repr): {[repr(p.name) for p in CURRENT_DIR.iterdir()]}')# ------------------------------------------------# Smart detection of the real static folder# ------------------------------------------------STATIC_DIR = Noneclean_static = CURRENT_DIR / 'static'if clean_static.exists() and clean_static.is_dir():    STATIC_DIR = clean_staticif STATIC_DIR is None:    for p in CURRENT_DIR.iterdir():        if p.is_dir() and p.name.startswith('static'):            STATIC_DIR = p            logger.warning(f'⚠️ Found static folder with unusual name: {repr(p.name)}')            breakif STATIC_DIR is None:    STATIC_DIR = clean_static    STATIC_DIR.mkdir(exist_ok=True)    logger.warning(f'⚠️ Created missing static folder: {STATIC_DIR}')logger.info(f'📁 Static folder: {STATIC_DIR}')# Create Flask app with the detected foldersapp = Flask(__name__,            template_folder=str(TEMPLATES_DIR),            static_folder=str(STATIC_DIR))app.config['SECRET_KEY'] = SECRET_KEYapp.config['DEBUG'] = DEBUGapp.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB# Enable CORSCORS(app, resources={r"/*": {"origins": "*"}})# SocketIO with eventlet for productionsocketio = SocketIO(    app,    cors_allowed_origins="*",    logger=DEBUG,    engineio_logger=DEBUG,    ping_timeout=60,    ping_interval=25,    async_mode='eventlet',    manage_session=False)# ================================================================#  5. GESTURE RECOGNIZER CLASS# ================================================================class GestureRecognizer:    def __init__(self):        """Initialize MediaPipe Hands with proper import handling"""        self.hands = None        self.mp_hands = None        self.mp_drawing = None        self.mp_drawing_styles = None        try:            # Use the globally imported mp            self.mp_hands = mp.solutions.hands            self.mp_drawing = mp.solutions.drawing_utils            self.mp_drawing_styles = mp.solutions.drawing_styles            # Initialize Hands            self.hands = self.mp_hands.Hands(                static_image_mode=False,                max_num_hands=1,                model_complexity=1,                min_detection_confidence=0.5,                min_tracking_confidence=0.5            )            logger.info('✅ MediaPipe initialized successfully')        except Exception as e:            logger.error(f'❌ MediaPipe initialization error: {e}')            logger.warning('⚠️ Gesture recognition will be disabled')            self.hands = None        self.gesture_history = []        self.history_size = HISTORY_SIZE        self.prev_gesture = '—'        self.smoothing_factor = SMOOTHING_FACTOR        self.last_frame_time = 0        self.frame_skip = 2  # Process every 3rd frame for performance        self.frame_count = 0        # Gesture names mapping        self.gesture_names = {            'fist': '✊ Fist',            'open': '🖐️ Open',            'point': '☝️ Point',            'two': '✌️ Two',            'pinch': '🤏 Pinch',            'ok': '👌 OK',            'shaka': '🤙 Shaka',            'stop': '✋ Stop',            'thumb_up': '👍 Thumb Up',            'thumb_down': '👎 Thumb Down',            'peace': '✌️ Peace',            'spock': '🖖 Spock'        }        if self.hands:            logger.info('🖐️ GestureRecognizer initialized successfully')        else:            logger.warning('⚠️ GestureRecognizer running in fallback mode (no hand tracking)')    def process_frame(self, image_bytes):        """Process image bytes and return landmarks and gestures"""        # Skip frames for performance        self.frame_count += 1        if self.frame_count % self.frame_skip != 0:            return None        if self.hands is None:            return None        try:            # Decode image            np_arr = np.frombuffer(image_bytes, np.uint8)            image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)            if image is None:                return None            # Convert to RGB            image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)            image_rgb.flags.writeable = False            # Process with MediaPipe            results = self.hands.process(image_rgb)            if not results.multi_hand_landmarks:                return None            # Get landmarks            landmarks = results.multi_hand_landmarks[0]            h, w, _ = image.shape            # Extract landmark coordinates            landmark_list = []            for lm in landmarks.landmark:                landmark_list.append({                    'x': lm.x,                    'y': lm.y,                    'z': lm.z                })            # Recognize gesture            gesture = self.recognize_gesture(landmarks, landmark_list)            # Calculate hand orientation            orientation = self.get_hand_orientation(landmark_list)            # Calculate hand position (for dragging)            wrist = landmark_list[0] if landmark_list else None            hand_pos = {                'x': wrist['x'] if wrist else 0,                'y': wrist['y'] if wrist else 0,                'z': wrist['z'] if wrist else 0            }            # Calculate gesture parameters (intensity, etc.)            params = self.get_gesture_parameters(landmark_list, gesture)            return {                'landmarks': landmark_list,                'gesture': gesture,                'orientation': orientation,                'position': hand_pos,                'params': params,                'timestamp': time.time()            }        except Exception as e:            logger.error(f'Error processing frame: {e}')            return None    def recognize_gesture(self, landmarks, landmark_list):        """Recognize gesture from hand landmarks"""        if not landmark_list or len(landmark_list) < 21:            return '—'        # Extract finger landmarks        thumb_tip = landmark_list[4]        thumb_ip = landmark_list[3]        thumb_mcp = landmark_list[2]        index_tip = landmark_list[8]        index_pip = landmark_list[6]        index_mcp = landmark_list[5]        middle_tip = landmark_list[12]        middle_pip = landmark_list[10]        middle_mcp = landmark_list[9]        ring_tip = landmark_list[16]        ring_pip = landmark_list[14]        pinky_tip = landmark_list[20]        pinky_pip = landmark_list[18]        wrist = landmark_list[0]        # Calculate finger angles and positions        # Check if fingers are extended (using y-coordinate relative to palm)        thumb_extended = thumb_tip['y'] < thumb_ip['y'] - 0.02        index_extended = index_tip['y'] < index_pip['y'] - 0.02        middle_extended = middle_tip['y'] < middle_pip['y'] - 0.02        ring_extended = ring_tip['y'] < ring_pip['y'] - 0.02        pinky_extended = pinky_tip['y'] < pinky_pip['y'] - 0.02        # Count extended fingers        extended_count = sum([index_extended, middle_extended, ring_extended, pinky_extended])        # Check fist (all fingers curled)        is_fist = not index_extended and not middle_extended and not ring_extended and not pinky_extended and not thumb_extended        # Check open hand (all fingers extended)        is_open = index_extended and middle_extended and ring_extended and pinky_extended and thumb_extended        # Check point (index extended, others curled)        is_point = index_extended and not middle_extended and not ring_extended and not pinky_extended        # Check two fingers (index and middle extended)        is_two = index_extended and middle_extended and not ring_extended and not pinky_extended        # Check peace sign (index and middle extended, separated)        is_peace = index_extended and middle_extended and not ring_extended and not pinky_extended and thumb_extended        # Check OK sign (thumb and index touching)        thumb_index_dist = ((thumb_tip['x'] - index_tip['x']) ** 2 +                           (thumb_tip['y'] - index_tip['y']) ** 2) ** 0.5        is_ok = thumb_index_dist < 0.05 and not middle_extended and not ring_extended and not pinky_extended        # Check pinch (thumb and index close)        is_pinch = thumb_index_dist < 0.08 and index_extended        # Check shaka (thumb and pinky extended)        is_shaka = thumb_extended and pinky_extended and not index_extended and not middle_extended and not ring_extended        # Check stop (open hand with fingers together)        is_stop = is_open and (index_tip['x'] - pinky_tip['x']) < 0.1        # Check thumb up        is_thumb_up = thumb_extended and not index_extended and not middle_extended and not ring_extended and not pinky_extended        # Check thumb down        is_thumb_down = thumb_extended and not index_extended and not middle_extended and not ring_extended and not pinky_extended and thumb_tip['y'] > thumb_mcp['y']        # Check spock (index, middle, ring extended)        is_spock = index_extended and middle_extended and ring_extended and not pinky_extended        # Determine gesture with priority.        # IMPORTANT: several gestures are strict subsets of another gesture's        # condition (e.g. is_stop implies is_open, is_peace implies is_two,        # is_thumb_down implies is_thumb_up). The more specific/narrower        # condition must always be checked BEFORE the broader one, or it can        # never be reached. This ordering fixes that (previously 'stop',        # 'peace' and 'thumb_down' were unreachable dead branches).        gesture = '—'        if is_fist:            gesture = 'fist'        elif is_stop:            gesture = 'stop'        elif is_open:            gesture = 'open'        elif is_point:            gesture = 'point'        elif is_peace:            gesture = 'peace'        elif is_two:            gesture = 'two'        elif is_ok:            gesture = 'ok'        elif is_pinch:            gesture = 'pinch'        elif is_shaka:            gesture = 'shaka'        elif is_thumb_down:            gesture = 'thumb_down'        elif is_thumb_up:            gesture = 'thumb_up'        elif is_spock:            gesture = 'spock'        # Apply smoothing        self.gesture_history.append(gesture)        if len(self.gesture_history) > self.history_size:            self.gesture_history.pop(0)        # Get most frequent gesture in history        if self.gesture_history:            from collections import Counter            counter = Counter(self.gesture_history)            most_common = counter.most_common(1)[0]            # Only use if it appears enough times            if most_common[1] >= max(2, self.history_size // 2):                smoothed_gesture = most_common[0]            else:                smoothed_gesture = self.prev_gesture        else:            smoothed_gesture = gesture        self.prev_gesture = smoothed_gesture        return smoothed_gesture    def get_hand_orientation(self, landmark_list):        """Calculate hand orientation (rotation angles)"""        if not landmark_list or len(landmark_list) < 21:            return {'roll': 0, 'pitch': 0, 'yaw': 0}        wrist = landmark_list[0]        index_mcp = landmark_list[5]        pinky_mcp = landmark_list[17]        middle_mcp = landmark_list[9]        # Calculate roll (rotation around wrist-to-middle axis)        dx = pinky_mcp['x'] - index_mcp['x']        dy = pinky_mcp['y'] - index_mcp['y']        roll = np.arctan2(dy, dx) if dx != 0 else 0        # Calculate pitch (up/down tilt)        dx = middle_mcp['x'] - wrist['x']        dy = middle_mcp['y'] - wrist['y']        dz = middle_mcp['z'] - wrist['z']        pitch = np.arctan2(dy, np.sqrt(dx**2 + dz**2)) if (dx**2 + dz**2) > 0 else 0        # Calculate yaw (left/right rotation)        yaw = np.arctan2(dz, dx) if dx != 0 else 0        return {            'roll': float(roll),            'pitch': float(pitch),            'yaw': float(yaw)        }    def get_gesture_parameters(self, landmark_list, gesture):        """Get additional parameters for gesture (intensity, value, etc.)"""        params = {            'intensity': 0.5,            'value': 0.0,            'speed': 0.0,            'position_delta': {'x': 0, 'y': 0, 'z': 0}        }        if not landmark_list or len(landmark_list) < 21:            return params        # Calculate fist tightness (for zoom)        if gesture == 'fist':            # Measure distance from fingertips to palm            palm_center = landmark_list[0]  # wrist as palm center            tips = [landmark_list[4], landmark_list[8], landmark_list[12], landmark_list[16], landmark_list[20]]            distances = []            for tip in tips:                dist = ((tip['x'] - palm_center['x']) ** 2 +                       (tip['y'] - palm_center['y']) ** 2) ** 0.5                distances.append(dist)            avg_dist = np.mean(distances) if distances else 0.3            # Tightness: 0 = open, 1 = closed fist            params['intensity'] = max(0, min(1, 1 - avg_dist * 3))            params['value'] = params['intensity']        # For open hand, spread determines zoom intensity        elif gesture == 'open':            # Measure spread of fingers            spread = 0            if len(landmark_list) > 4:                index_tip = landmark_list[8]                pinky_tip = landmark_list[20]                spread = ((index_tip['x'] - pinky_tip['x']) ** 2 +                         (index_tip['y'] - pinky_tip['y']) ** 2) ** 0.5            params['intensity'] = max(0, min(1, spread * 2))            params['value'] = params['intensity']        # For pinch, value is the distance between thumb and index        elif gesture == 'pinch':            thumb_tip = landmark_list[4]            index_tip = landmark_list[8]            dist = ((thumb_tip['x'] - index_tip['x']) ** 2 +                   (thumb_tip['y'] - index_tip['y']) ** 2) ** 0.5            params['value'] = max(0, min(1, 1 - dist * 5))            params['intensity'] = params['value']        # For point, direction indicates position        elif gesture == 'point':            index_tip = landmark_list[8]            index_mcp = landmark_list[5]            direction = {                'x': index_tip['x'] - index_mcp['x'],                'y': index_tip['y'] - index_mcp['y'],                'z': index_tip['z'] - index_mcp['z']            }            params['direction'] = direction        return params    def close(self):        """Clean up resources"""        if self.hands:            self.hands.close()        logger.info('🖐️ GestureRecognizer closed')# ================================================================#  6. GLOBAL INSTANCES# ================================================================gesture_recognizer = GestureRecognizer()# ================================================================#  7. FLASK ROUTES# ================================================================@app.route('/')def index():    """Serve the main application"""    logger.info('📄 Serving index page')    try:        # Try normal template rendering        return render_template('3d.html')    except Exception as e:        logger.error(f'Template error: {e}')        # Try serving from templates folder directly        try:            return send_from_directory(str(TEMPLATES_DIR), '3d.html')        except Exception as e2:            logger.error(f'Fallback error: {e2}')            # If all fails, show debug info            return f"""            <h1>XENA - Template Error</h1>            <p>Current directory: {os.getcwd()}</p>            <p>Current file dir: {CURRENT_DIR}</p>            <p>Templates folder: {TEMPLATES_DIR}</p>            <p>Templates folder exists: {TEMPLATES_DIR.exists()}</p>            <p>Files in templates: {list(TEMPLATES_DIR.glob('*')) if TEMPLATES_DIR.exists() else 'N/A'}</p>            <p>3d.html exists: {(TEMPLATES_DIR / '3d.html').exists()}</p>            <p>Error: {str(e)}</p>            """, 500@app.route('/health')def health():    """Health check endpoint"""    return jsonify({        'status': 'healthy',        'timestamp': datetime.now().isoformat(),        'version': '1.0.0',        'name': 'XENA',        'mediapipe_loaded': gesture_recognizer.hands is not None,        'template_exists': (TEMPLATES_DIR / '3d.html').exists()    })@app.route('/api/save', methods=['POST'])def save_project():    """Save project to server"""    try:        data = request.json        if not data:            return jsonify({'error': 'No data provided'}), 400        # Generate project ID        project_id = data.get('id', str(uuid.uuid4()))        project_name = data.get('project', {}).get('name', 'Untitled')        # Add metadata        data['_metadata'] = {            'saved_at': datetime.now().isoformat(),            'server_version': '1.0.0',            'id': project_id        }        # Save to file        filename = PROJECTS_FOLDER / f'{project_id}.xena'        with open(filename, 'w') as f:            json.dump(data, f, indent=2)        logger.info(f'💾 Project saved: {project_name} ({project_id})')        return jsonify({            'success': True,            'id': project_id,            'name': project_name,            'message': 'Project saved successfully'        })    except Exception as e:        logger.error(f'Error saving project: {e}')        return jsonify({'error': str(e)}), 500@app.route('/api/load/<project_id>', methods=['GET'])def load_project(project_id):    """Load project from server"""    try:        filename = PROJECTS_FOLDER / f'{project_id}.xena'        if not filename.exists():            return jsonify({'error': 'Project not found'}), 404        with open(filename, 'r') as f:            data = json.load(f)        logger.info(f'📂 Project loaded: {project_id}')        return jsonify(data)    except Exception as e:        logger.error(f'Error loading project: {e}')        return jsonify({'error': str(e)}), 500@app.route('/api/list_projects', methods=['GET'])def list_projects():    """List all saved projects"""    try:        projects = []        for file in PROJECTS_FOLDER.glob('*.xena'):            try:                with open(file, 'r') as f:                    data = json.load(f)                projects.append({                    'id': file.stem,                    'name': data.get('project', {}).get('name', 'Untitled'),                    'objects': len(data.get('objects', [])),                    'date': data.get('_metadata', {}).get('saved_at',                           data.get('project', {}).get('modified', 'Unknown'))                })            except:                continue        # Sort by date (newest first)        projects.sort(key=lambda x: x['date'], reverse=True)        return jsonify(projects)    except Exception as e:        logger.error(f'Error listing projects: {e}')        return jsonify([])@app.route('/api/delete/<project_id>', methods=['DELETE'])def delete_project(project_id):    """Delete a project"""    try:        filename = PROJECTS_FOLDER / f'{project_id}.xena'        if not filename.exists():            return jsonify({'error': 'Project not found'}), 404        filename.unlink()        logger.info(f'🗑️ Project deleted: {project_id}')        return jsonify({'success': True, 'message': 'Project deleted'})    except Exception as e:        logger.error(f'Error deleting project: {e}')        return jsonify({'error': str(e)}), 500@app.route('/api/export/gltf', methods=['POST'])def export_gltf():    """Export project as GLTF (placeholder)"""    try:        data = request.json or {}        # Create a simple GLTF-like structure        gltf_data = {            'asset': {                'version': '2.0',                'generator': 'XENA v1.0.0'            },            'scene': 0,            'scenes': [{                'nodes': [0]            }],            'nodes': [{                'name': 'Exported from XENA',                'children': []            }],            'meshes': [],            'materials': [],            'buffers': [],            'bufferViews': [],            'accessors': []        }        # Add objects as nodes        objects = data.get('objects', [])        for i, obj in enumerate(objects):            gltf_data['nodes'].append({                'name': obj.get('name', f'Object_{i}'),                'translation': obj.get('position', [0, 0, 0]),                'rotation': obj.get('rotation', [0, 0, 0, 1]),                'scale': obj.get('scale', [1, 1, 1])            })        # Save to file        export_id = str(uuid.uuid4())        filename = PROJECTS_FOLDER / f'export_{export_id}.gltf'        with open(filename, 'w') as f:            json.dump(gltf_data, f, indent=2)        logger.info(f'📤 GLTF export created: {export_id}')        return send_file(            filename,            as_attachment=True,            download_name=f'xena_export_{export_id}.gltf',            mimetype='model/gltf+json'        )    except Exception as e:        logger.error(f'Error exporting GLTF: {e}')        return jsonify({'error': str(e)}), 500@app.route('/api/export/obj', methods=['POST'])def export_obj():    """Export project as OBJ (placeholder)"""    try:        data = request.json or {}        obj_content = f"# XENA Export\n"        obj_content += f"# Generated: {datetime.now().isoformat()}\n\n"        objects = data.get('objects', [])        vertex_count = 1        for i, obj in enumerate(objects):            obj_content += f"o {obj.get('name', f'Object_{i}')}\n"            # Simple placeholder vertices (a cube)            for v in [                [-0.5, -0.5, -0.5],                [0.5, -0.5, -0.5],                [0.5, 0.5, -0.5],                [-0.5, 0.5, -0.5],                [-0.5, -0.5, 0.5],                [0.5, -0.5, 0.5],                [0.5, 0.5, 0.5],                [-0.5, 0.5, 0.5]            ]:                x, y, z = v                obj_content += f"v {x:.3f} {y:.3f} {z:.3f}\n"            obj_content += "\n"            # Faces            faces = [                [1, 2, 3, 4],                [5, 8, 7, 6],                [1, 5, 6, 2],                [2, 6, 7, 3],                [3, 7, 8, 4],                [4, 8, 5, 1]            ]            for face in faces:                obj_content += f"f {face[0]+vertex_count} {face[1]+vertex_count} {face[2]+vertex_count} {face[3]+vertex_count}\n"            vertex_count += 8            obj_content += "\n"        # Save to file        export_id = str(uuid.uuid4())        filename = PROJECTS_FOLDER / f'export_{export_id}.obj'        with open(filename, 'w') as f:            f.write(obj_content)        logger.info(f'📤 OBJ export created: {export_id}')        return send_file(            filename,            as_attachment=True,            download_name=f'xena_export_{export_id}.obj',            mimetype='text/plain'        )    except Exception as e:        logger.error(f'Error exporting OBJ: {e}')        return jsonify({'error': str(e)}), 500@app.route('/api/screenshot', methods=['POST'])def save_screenshot():    """Save screenshot from client"""    try:        data = request.json        if not data or 'image' not in data:            return jsonify({'error': 'No image data'}), 400        # Decode base64 image        image_data = data['image'].split(',')[1] if ',' in data['image'] else data['image']        image_bytes = base64.b64decode(image_data)        image = Image.open(BytesIO(image_bytes))        # Save to file        screenshot_id = str(uuid.uuid4())        filename = PROJECTS_FOLDER / f'screenshot_{screenshot_id}.png'        image.save(filename)        logger.info(f'🖼️ Screenshot saved: {screenshot_id}')        return jsonify({            'success': True,            'id': screenshot_id,            'url': f'/api/screenshot/{screenshot_id}'        })    except Exception as e:        logger.error(f'Error saving screenshot: {e}')        return jsonify({'error': str(e)}), 500@app.route('/api/screenshot/<screenshot_id>', methods=['GET'])def get_screenshot(screenshot_id):    """Get screenshot by ID"""    try:        filename = PROJECTS_FOLDER / f'screenshot_{screenshot_id}.png'        if not filename.exists():            return jsonify({'error': 'Screenshot not found'}), 404        return send_file(filename, mimetype='image/png')    except Exception as e:        logger.error(f'Error getting screenshot: {e}')        return jsonify({'error': str(e)}), 500# ================================================================#  8. WEBSOCKET EVENTS# ================================================================@socketio.on('connect')def handle_connect():    """Handle client connection"""    logger.info(f'🔗 Client connected: {request.sid}')    emit('connected', {        'message': 'Welcome to XENA!',        'timestamp': datetime.now().isoformat()    })@socketio.on('disconnect')def handle_disconnect():    """Handle client disconnection"""    logger.info(f'🔌 Client disconnected: {request.sid}')@socketio.on('frame')def handle_frame(data):    """Process video frame from client"""    try:        # Check if data is base64 string or raw bytes        if isinstance(data, str):            # Base64 encoded            if data.startswith('data:image'):                data = data.split(',')[1]            image_bytes = base64.b64decode(data)        else:            # Raw bytes            image_bytes = data        # Process with gesture recognizer        result = gesture_recognizer.process_frame(image_bytes)        if result and result['landmarks']:            # Prepare response            response = {                'landmarks': result['landmarks'],                'gesture': result['gesture'],                'orientation': result['orientation'],                'position': result['position'],                'params': result['params']            }            # Generate actions based on gesture            actions = generate_gesture_actions(result)            if actions:                response['actions'] = actions            # Send back to client            emit('hand_landmarks', response)    except Exception as e:        logger.error(f'Error processing frame: {e}')@socketio.on('save_project')def handle_save_project(data):    """Handle save project via WebSocket.    Returns the response dict so it is delivered as the ack callback    argument on the client's `socket.emit('save_project', data, cb)`    call — without a return value here, that callback never fires and    the client silently does nothing.    """    try:        project_id = data.get('id', str(uuid.uuid4()))        project_name = data.get('project', {}).get('name', 'Untitled')        # Save to file        filename = PROJECTS_FOLDER / f'{project_id}.xena'        with open(filename, 'w') as f:            json.dump(data, f, indent=2)        logger.info(f'💾 Project saved via WebSocket: {project_name} ({project_id})')        response = {            'success': True,            'id': project_id,            'name': project_name,            'message': 'Project saved successfully'        }        emit('save_response', response)        return response    except Exception as e:        logger.error(f'Error saving project via WebSocket: {e}')        response = {            'success': False,            'error': str(e)        }        emit('save_response', response)        return response@socketio.on('load_project')def handle_load_project(data):    """Handle load project via WebSocket (returns the ack payload — see    handle_save_project for why the return is required)."""    try:        project_id = data.get('id')        if not project_id:            response = {'error': 'No project ID provided'}            emit('load_response', response)            return response        filename = PROJECTS_FOLDER / f'{project_id}.xena'        if not filename.exists():            response = {'error': 'Project not found'}            emit('load_response', response)            return response        with open(filename, 'r') as f:            project_data = json.load(f)        logger.info(f'📂 Project loaded via WebSocket: {project_id}')        response = {            'success': True,            'data': project_data        }        emit('load_response', response)        return response['data']    except Exception as e:        logger.error(f'Error loading project via WebSocket: {e}')        response = {'error': str(e)}        emit('load_response', response)        return response@socketio.on('list_projects')def handle_list_projects():    """Handle list projects via WebSocket (returns the ack payload — see    handle_save_project for why the return is required)."""    try:        projects = []        for file in PROJECTS_FOLDER.glob('*.xena'):            try:                with open(file, 'r') as f:                    data = json.load(f)                projects.append({                    'id': file.stem,                    'name': data.get('project', {}).get('name', 'Untitled'),                    'objects': len(data.get('objects', [])),                    'date': data.get('_metadata', {}).get('saved_at',                           data.get('project', {}).get('modified', 'Unknown'))                })            except:                continue        projects.sort(key=lambda x: x['date'], reverse=True)        emit('projects_list', projects)        return projects    except Exception as e:        logger.error(f'Error listing projects via WebSocket: {e}')        emit('projects_list', [])        return []@socketio.on('delete_project')def handle_delete_project(data):    """Handle delete project via WebSocket (returns the ack payload — see    handle_save_project for why the return is required)."""    try:        project_id = data.get('id')        if not project_id:            response = {'error': 'No project ID provided'}            emit('delete_response', response)            return response        filename = PROJECTS_FOLDER / f'{project_id}.xena'        if not filename.exists():            response = {'error': 'Project not found'}            emit('delete_response', response)            return response        filename.unlink()        logger.info(f'🗑️ Project deleted via WebSocket: {project_id}')        response = {            'success': True,            'message': 'Project deleted'        }        emit('delete_response', response)        return response    except Exception as e:        logger.error(f'Error deleting project via WebSocket: {e}')        response = {'error': str(e)}        emit('delete_response', response)        return response# ================================================================#  9. GESTURE ACTION GENERATOR# ================================================================def generate_gesture_actions(result):    """Generate actions based on recognized gesture"""    if not result:        return []    gesture = result['gesture']    params = result.get('params', {})    orientation = result.get('orientation', {})    position = result.get('position', {})    actions = []    # Fist: Zoom out    if gesture == 'fist':        intensity = params.get('intensity', 0.5)        value = params.get('value', 0.5)        actions.append({            'action': 'zoom',            'value': -intensity * 0.5,            'intensity': intensity        })    # Open: Zoom in    elif gesture == 'open':        intensity = params.get('intensity', 0.5)        value = params.get('value', 0.5)        actions.append({            'action': 'zoom',            'value': intensity * 0.5,            'intensity': intensity        })    # Point: Select/Hover    elif gesture == 'point':        # Use position for selection        actions.append({            'action': 'select',            'index': -1,  # Will be determined by client using raycasting            'position': position        })    # Two fingers: Drag & Drop    elif gesture == 'two' or gesture == 'peace':        # Use hand movement for dragging        dx = position.get('x', 0) * 100        dy = position.get('y', 0) * 100        dz = position.get('z', 0) * 10        actions.append({            'action': 'drag',            'dx': dx,            'dy': dy,            'dz': dz,            'position': position        })    # Pinch: Scale    elif gesture == 'pinch':        value = params.get('value', 0.5)        actions.append({            'action': 'scale',            'value': (value - 0.5) * 0.02,            'intensity': value        })    # OK: Right click / Properties    elif gesture == 'ok':        actions.append({            'action': 'right_click',            'gesture': 'ok'        })    # Shaka: Rotate view    elif gesture == 'shaka':        roll = orientation.get('roll', 0)        pitch = orientation.get('pitch', 0)        yaw = orientation.get('yaw', 0)        actions.append({            'action': 'rotate',            'x': roll * 2,            'y': pitch * 2,            'z': yaw * 2        })    # Thumb Up: Save    elif gesture == 'thumb_up':        actions.append({            'action': 'save',            'gesture': 'thumb_up'        })    # Thumb Down: Reset view    elif gesture == 'thumb_down':        actions.append({            'action': 'reset',            'gesture': 'thumb_down'        })    # Stop: Delete selected    elif gesture == 'stop':        actions.append({            'action': 'delete',            'gesture': 'stop'        })    # Spock: Undo    elif gesture == 'spock':        actions.append({            'action': 'undo',            'gesture': 'spock'        })    return actions# ================================================================#  10. MAIN ENTRY POINT# ================================================================if __name__ == '__main__':    try:        logger.info('═' * 70)        logger.info('🚀 XENA Server Starting...')        logger.info(f'🌐 HTTP: http://{HOST}:{PORT}')        logger.info('═' * 70)        logger.info('📌 Press Ctrl+C to stop')        logger.info('═' * 70)        # Run server with SocketIO        socketio.run(            app,            host=HOST,            port=PORT,            debug=DEBUG,            use_reloader=DEBUG        )    except KeyboardInterrupt:        logger.info('\n🛑 Server stopped by user')        gesture_recognizer.close()        sys.exit(0)    except Exception as e:        logger.error(f'❌ Server error: {e}')        gesture_recognizer.close()        sys.exit(1)# ================================================================#  END OF FILE# ================================================================
