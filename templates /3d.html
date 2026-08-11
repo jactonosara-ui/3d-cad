@@ -3,1049 +3,180 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>XENA – 3D Gesture Workspace</title>
-
-    <!-- ============================================================
-    ALL STYLES – INLINE
-    ============================================================ -->
+    <title>XENA Pro – 3D Gesture Workspace</title>
+    
     <style>
-        /* ----- RESET & BASE ----- */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            background: #0a0a0f;
-            color: #fff;
-            overflow: hidden;
-            height: 100vh;
-            width: 100vw;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
-            touch-action: none;
-        }
-
-        /* ----- CYBERPUNK THEME VARIABLES ----- */
-        :root {
-            --primary: #00f0ff;
-            --primary-dim: rgba(0, 240, 255, 0.15);
-            --secondary: #ff00e5;
-            --accent: #ffd700;
-            --bg: #0a0a0f;
-            --glass: rgba(10, 10, 15, 0.78);
-            --glass-border: rgba(0, 240, 255, 0.15);
-            --glow: 0 0 40px rgba(0, 240, 255, 0.15);
-            --text-primary: #ffffff;
-            --text-secondary: #b0b0b0;
-            --radius: 14px;
-            --shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
-        }
-
-        /* ----- MAIN LAYOUT ----- */
-        #app {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
-            background: var(--bg);
-        }
-
-        #three-container {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1;
-        }
-
-        /* ----- LOADING SCREEN ----- */
-        #loading {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 999;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background: var(--bg);
-            transition: opacity 0.9s ease, visibility 0.9s ease;
-        }
-        #loading.hidden {
-            opacity: 0;
-            visibility: hidden;
-            pointer-events: none;
-        }
-
-        #loading .logo-text {
-            font-size: clamp(48px, 10vw, 100px);
-            font-weight: 800;
-            background: linear-gradient(135deg, var(--primary), var(--secondary), var(--accent));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            letter-spacing: 6px;
-            text-shadow: 0 0 80px rgba(0, 240, 255, 0.2);
-            animation: logoPulse 2.5s ease-in-out infinite;
-        }
-        @keyframes logoPulse {
-            0%,
-            100% {
-                transform: scale(1);
-                filter: brightness(1);
-            }
-            50% {
-                transform: scale(1.02);
-                filter: brightness(1.3);
-            }
-        }
-
-        #loading .subtitle {
-            font-size: clamp(12px, 2vw, 20px);
-            color: var(--text-secondary);
-            letter-spacing: 8px;
-            text-transform: uppercase;
-            margin-top: 8px;
-            font-weight: 300;
-        }
-
-        .loader-ring {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            border: 3px solid rgba(0, 240, 255, 0.08);
-            border-top: 3px solid var(--primary);
-            animation: spin 0.9s cubic-bezier(0.6, 0, 0.4, 1) infinite;
-            box-shadow: 0 0 60px rgba(0, 240, 255, 0.08);
-            margin-top: 30px;
-        }
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        .loader-progress {
-            width: 200px;
-            height: 3px;
-            background: rgba(255, 255, 255, 0.06);
-            border-radius: 4px;
-            margin-top: 24px;
-            overflow: hidden;
-        }
-        .loader-progress-bar {
-            height: 100%;
-            width: 0%;
-            background: linear-gradient(90deg, var(--primary), var(--secondary));
-            border-radius: 4px;
-            transition: width 0.3s ease;
-        }
-
-        .loader-status {
-            margin-top: 16px;
-            font-size: 13px;
-            color: var(--text-secondary);
-            letter-spacing: 2px;
-            font-weight: 300;
-        }
-
-        /* ----- CAMERA FEED (Picture-in-Picture) ----- */
+        /* ... Your existing CSS ... */
+        /* Add these enhancements: */
+        
+        /* Enhanced Camera HUD */
         #camera-container {
             position: absolute;
             bottom: 24px;
             right: 24px;
-            width: 280px;
-            height: 210px;
+            width: 320px;
+            height: 240px;
             z-index: 50;
-            border-radius: var(--radius);
+            border-radius: 14px;
             overflow: hidden;
-            border: 1.5px solid var(--glass-border);
-            box-shadow: var(--glow), var(--shadow);
+            border: 1.5px solid rgba(0, 240, 255, 0.2);
+            box-shadow: 0 0 60px rgba(0, 240, 255, 0.1), 0 8px 32px rgba(0, 0, 0, 0.6);
             background: rgba(0, 0, 0, 0.6);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             backdrop-filter: blur(8px);
             resize: both;
             min-width: 120px;
             min-height: 90px;
         }
-        #camera-container:hover {
-            transform: scale(1.03);
-            border-color: var(--primary);
-            box-shadow: 0 0 60px rgba(0, 240, 255, 0.2), var(--shadow);
-        }
-
-        #camera-feed {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transform: scaleX(-1);
-        }
-
-        #hand-overlay {
+        
+        /* Scanning line effect */
+        #camera-container::after {
+            content: '';
             position: absolute;
-            top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
+            right: 0;
+            top: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00f0ff, transparent);
+            animation: scanLine 3s linear infinite;
+            opacity: 0.3;
+            z-index: 5;
             pointer-events: none;
-            transform: scaleX(-1);
         }
-
-        /* ----- STATUS BAR ----- */
-        #status-bar {
+        
+        @keyframes scanLine {
+            0% { top: 0; opacity: 0.3; }
+            50% { opacity: 0.8; }
+            100% { top: 100%; opacity: 0.3; }
+        }
+        
+        /* Corner brackets */
+        #camera-container .corner {
             position: absolute;
-            top: 20px;
-            left: 20px;
-            z-index: 50;
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 14px;
-            padding: 10px 18px;
-            background: var(--glass);
-            backdrop-filter: blur(20px);
-            border-radius: 30px;
-            border: 1px solid var(--glass-border);
-            font-size: 12px;
-            letter-spacing: 0.5px;
-            box-shadow: var(--shadow);
+            width: 20px;
+            height: 20px;
+            border-color: #00f0ff;
+            border-style: solid;
+            border-width: 0;
+            z-index: 6;
             pointer-events: none;
+            opacity: 0.5;
         }
-        #status-bar .dot {
+        #camera-container .corner.tl {
+            top: 6px;
+            left: 6px;
+            border-top-width: 2px;
+            border-left-width: 2px;
+        }
+        #camera-container .corner.tr {
+            top: 6px;
+            right: 6px;
+            border-top-width: 2px;
+            border-right-width: 2px;
+        }
+        #camera-container .corner.bl {
+            bottom: 6px;
+            left: 6px;
+            border-bottom-width: 2px;
+            border-left-width: 2px;
+        }
+        #camera-container .corner.br {
+            bottom: 6px;
+            right: 6px;
+            border-bottom-width: 2px;
+            border-right-width: 2px;
+        }
+        
+        /* Status indicator with pulse */
+        #camera-container .status-dot {
+            position: absolute;
+            bottom: 8px;
+            left: 8px;
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background: #00ff88;
-            box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
-            animation: pulse-dot 2s infinite;
-        }
-        @keyframes pulse-dot {
-            0%,
-            100% {
-                opacity: 1;
-                transform: scale(1);
-            }
-            50% {
-                opacity: 0.4;
-                transform: scale(0.8);
-            }
-        }
-        #status-bar .sep {
-            color: rgba(255, 255, 255, 0.15);
-        }
-        #status-bar .label {
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            font-weight: 300;
-            font-size: 10px;
-        }
-        #status-bar .value {
-            color: var(--primary);
-            font-weight: 600;
-            font-size: 12px;
-        }
-        #status-bar .value.gesture {
-            color: var(--accent);
-            min-width: 60px;
-        }
-
-        /* ----- GESTURE GUIDE ----- */
-        #gesture-guide {
-            position: absolute;
-            bottom: 24px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 50;
-            display: flex;
-            gap: 10px;
-            padding: 8px 16px;
-            background: var(--glass);
-            backdrop-filter: blur(20px);
-            border-radius: 40px;
-            border: 1px solid var(--glass-border);
-            box-shadow: var(--shadow);
-        }
-        #gesture-guide .icon {
-            width: 38px;
-            height: 38px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.04);
-            transition: all 0.3s ease;
-            opacity: 0.35;
-            cursor: default;
-        }
-        #gesture-guide .icon.active {
-            opacity: 1;
-            background: var(--primary-dim);
-            box-shadow: 0 0 30px rgba(0, 240, 255, 0.2);
-            transform: scale(1.15);
-        }
-        #gesture-guide .icon .label {
-            display: none;
-        }
-
-        /* ----- PROPERTIES PANEL (right sidebar) ----- */
-        #properties-panel {
-            position: absolute;
-            top: 80px;
-            right: 24px;
-            z-index: 50;
-            padding: 0;
-            background: var(--glass);
-            backdrop-filter: blur(20px);
-            border-radius: var(--radius);
-            border: 1px solid var(--glass-border);
-            width: 230px;
-            display: none;
-            font-size: 12px;
-            box-shadow: var(--shadow);
-        }
-        #properties-panel.visible {
-            display: flex;
-            flex-direction: column;
-            animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateX(20px) scale(0.96);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0) scale(1);
-            }
-        }
-        #properties-panel .title {
-            color: var(--primary);
-            font-weight: 700;
-            font-size: 13px;
-            letter-spacing: 1px;
-        }
-        #properties-panel .row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 5px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-            gap: 8px;
-        }
-        #properties-panel .row:last-child {
-            border-bottom: none;
-        }
-        #properties-panel .row .lbl {
-            color: var(--text-secondary);
-            font-weight: 300;
-            flex-shrink: 0;
-        }
-        #properties-panel .row .val {
-            color: var(--primary);
-            font-weight: 500;
-            font-family: 'Courier New', monospace;
-        }
-        .panel-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 14px 16px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            flex-shrink: 0;
-        }
-        .panel-zoom-controls {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-        .panel-zoom-controls button {
-            width: 20px;
-            height: 20px;
-            border-radius: 5px;
-            border: 1px solid var(--glass-border);
-            background: rgba(255, 255, 255, 0.04);
-            color: var(--text-secondary);
-            font-size: 12px;
-            line-height: 1;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .panel-zoom-controls button:hover {
-            color: var(--primary);
-            border-color: var(--primary);
-        }
-        .panel-zoom-controls .zoom-pct {
-            font-size: 10px;
-            color: var(--text-secondary);
-            min-width: 30px;
-            text-align: center;
-        }
-        .panel-body {
-            overflow-y: auto;
-            padding: 14px 16px;
-            transform-origin: top left;
-        }
-        .panel-section {
-            margin-bottom: 16px;
-        }
-        .panel-section:last-child {
-            margin-bottom: 0;
-        }
-        .panel-section-title {
-            font-size: 10px;
-            letter-spacing: 1.5px;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            margin-bottom: 8px;
-            font-weight: 600;
-        }
-        #outliner-list {
-            display: flex;
-            flex-direction: column;
-            gap: 3px;
-            max-height: 160px;
-            overflow-y: auto;
-        }
-        .outliner-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 6px 8px;
-            border-radius: 6px;
-            background: rgba(255, 255, 255, 0.03);
-            cursor: pointer;
-            font-size: 11px;
-            transition: all 0.15s ease;
-            gap: 6px;
-        }
-        .outliner-item:hover {
-            background: var(--primary-dim);
-        }
-        .outliner-item.active {
-            background: var(--primary-dim);
-            border: 1px solid var(--primary);
-        }
-        .outliner-item .oi-name {
-            flex: 1;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-        .outliner-item .oi-del {
-            opacity: 0.5;
-            font-size: 12px;
-            padding: 0 2px;
-        }
-        .outliner-item .oi-del:hover {
-            opacity: 1;
-            color: #ff4466;
-        }
-        .outliner-empty {
-            color: var(--text-secondary);
-            font-size: 11px;
-            font-style: italic;
-            padding: 4px 0;
-        }
-        .prop-input {
-            width: 56px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--glass-border);
-            border-radius: 5px;
-            color: var(--primary);
-            font-family: 'Courier New', monospace;
-            font-size: 11px;
-            padding: 3px 4px;
-            text-align: right;
-        }
-        .prop-input:focus {
-            outline: none;
-            border-color: var(--primary);
-        }
-        .prop-xyz {
-            display: flex;
-            gap: 4px;
-        }
-
-        /* ----- LEFT TOOLBAR ----- */
-        #left-toolbar {
-            position: absolute;
-            top: 80px;
-            left: 20px;
-            z-index: 50;
-            width: 200px;
-            background: var(--glass);
-            backdrop-filter: blur(20px);
-            border-radius: var(--radius);
-            border: 1px solid var(--glass-border);
-            box-shadow: var(--shadow);
-            display: flex;
-            flex-direction: column;
-        }
-        #left-toolbar .panel-body {
-            max-height: 70vh;
-        }
-        .gizmo-modes {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 6px;
-        }
-        .gizmo-modes button {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 2px;
-            padding: 8px 2px;
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid var(--glass-border);
-            border-radius: 8px;
-            color: var(--text-secondary);
-            cursor: pointer;
-            font-size: 9px;
-            font-family: inherit;
-            letter-spacing: 0.3px;
-            transition: all 0.15s ease;
-        }
-        .gizmo-modes button .gm-icon {
-            font-size: 16px;
-        }
-        .gizmo-modes button:hover {
-            border-color: var(--primary);
-            color: #fff;
-        }
-        .gizmo-modes button.active {
-            background: var(--primary-dim);
-            border-color: var(--primary);
-            color: var(--primary);
-            box-shadow: 0 0 20px rgba(0, 240, 255, 0.15);
-        }
-        .shape-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 6px;
-        }
-        .shape-grid button {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 3px;
-            padding: 8px 2px;
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid var(--glass-border);
-            border-radius: 8px;
-            color: var(--text-secondary);
-            cursor: pointer;
-            font-size: 9px;
-            font-family: inherit;
-            transition: all 0.15s ease;
-        }
-        .shape-grid button .sg-icon {
-            font-size: 18px;
-        }
-        .shape-grid button:hover {
-            border-color: var(--primary);
-            color: #fff;
-            transform: translateY(-2px);
-        }
-        .toolbar-actions {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-        .toolbar-actions button {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 10px;
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid var(--glass-border);
-            border-radius: 8px;
-            color: var(--text-secondary);
-            cursor: pointer;
-            font-size: 11px;
-            font-family: inherit;
-            transition: all 0.15s ease;
-        }
-        .toolbar-actions button:hover {
-            border-color: var(--primary);
-            color: #fff;
-        }
-        .toolbar-actions button.danger:hover {
-            border-color: #ff4466;
-            color: #ff4466;
-        }
-        .extrude-hint {
-            font-size: 10px;
-            color: var(--text-secondary);
-            line-height: 1.5;
-            padding: 8px;
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 8px;
-            display: none;
-        }
-        .extrude-hint.visible {
-            display: block;
-        }
-
-        /* ----- SAVE CONTROLS ----- */
-        #save-controls {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            z-index: 50;
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-        #save-controls .btn {
-            background: var(--glass);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            border-radius: 30px;
-            padding: 8px 16px;
-            color: #fff;
-            font-size: 12px;
-            cursor: pointer;
-            transition: all 0.25s ease;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-weight: 500;
-            letter-spacing: 0.3px;
-            box-shadow: var(--shadow);
-            font-family: inherit;
-        }
-        #save-controls .btn:hover {
-            background: var(--primary-dim);
-            border-color: var(--primary);
-            transform: scale(1.04);
-            box-shadow: 0 0 40px rgba(0, 240, 255, 0.15);
-        }
-        #save-controls .btn .icon {
-            font-size: 16px;
-        }
-        #save-controls .btn-primary {
-            background: rgba(0, 240, 255, 0.12);
-            border-color: var(--primary);
-        }
-        #save-controls .btn-primary:hover {
-            background: rgba(0, 240, 255, 0.25);
-        }
-
-        /* ----- SAVE MENU (dropdown) ----- */
-        #save-menu {
-            position: absolute;
-            top: 58px;
-            right: 0;
-            z-index: 60;
-            background: var(--glass);
-            backdrop-filter: blur(30px);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius);
-            padding: 8px 0;
-            min-width: 210px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
-            display: none;
-            animation: dropIn 0.2s ease;
-        }
-        #save-menu.open {
-            display: block;
-        }
-        @keyframes dropIn {
-            from {
-                opacity: 0;
-                transform: translateY(-10px) scale(0.96);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-        }
-        #save-menu .item {
-            padding: 10px 18px;
-            color: #ddd;
-            font-size: 13px;
-            cursor: pointer;
-            transition: all 0.15s ease;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            border: none;
-            background: none;
-            width: 100%;
-            text-align: left;
-            font-family: inherit;
-        }
-        #save-menu .item:hover {
-            background: var(--primary-dim);
-            color: #fff;
-        }
-        #save-menu .item .icon {
-            font-size: 16px;
-            width: 24px;
-        }
-        #save-menu .divider {
-            height: 1px;
-            background: rgba(255, 255, 255, 0.06);
-            margin: 4px 12px;
-        }
-
-        /* ----- PROJECT LIBRARY (overlay) ----- */
-        #library-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 200;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(20px);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        #library-overlay.open {
-            display: flex;
-            animation: fadeIn 0.3s ease;
-        }
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-            to {
-                opacity: 1;
-            }
-        }
-        #library-modal {
-            background: var(--glass);
-            backdrop-filter: blur(40px);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius);
-            padding: 30px;
-            max-width: 800px;
-            width: 100%;
-            max-height: 80vh;
-            overflow-y: auto;
-            box-shadow: 0 40px 100px rgba(0, 0, 0, 0.8);
-        }
-        #library-modal .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            gap: 12px;
-        }
-        #library-modal .header h2 {
-            font-size: 22px;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        #library-modal .close-btn {
-            background: none;
-            border: none;
-            color: #fff;
-            font-size: 28px;
-            cursor: pointer;
-            opacity: 0.5;
-            transition: 0.2s;
-        }
-        #library-modal .close-btn:hover {
-            opacity: 1;
-        }
-        .project-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            gap: 16px;
-        }
-        .project-card {
-            background: rgba(255, 255, 255, 0.04);
-            border-radius: 12px;
-            padding: 14px;
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            transition: all 0.25s ease;
-            cursor: pointer;
-        }
-        .project-card:hover {
-            background: rgba(0, 240, 255, 0.06);
-            border-color: var(--primary);
-            transform: translateY(-3px);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-        }
-        .project-card .thumb {
-            width: 100%;
-            aspect-ratio: 16/9;
-            background: rgba(0, 0, 0, 0.4);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 30px;
-            color: var(--text-secondary);
-            margin-bottom: 10px;
-            overflow: hidden;
-        }
-        .project-card .thumb img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .project-card .name {
-            font-weight: 600;
-            font-size: 14px;
-            margin-bottom: 4px;
-        }
-        .project-card .meta {
-            font-size: 11px;
-            color: var(--text-secondary);
-        }
-        .project-card .actions {
-            display: flex;
-            gap: 8px;
-            margin-top: 10px;
-        }
-        .project-card .actions button {
-            background: rgba(255, 255, 255, 0.06);
-            border: none;
-            color: #fff;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 11px;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .project-card .actions button:hover {
-            background: var(--primary-dim);
-        }
-        .empty-library {
-            text-align: center;
-            padding: 40px 0;
-            color: var(--text-secondary);
-        }
-        .empty-library .big-icon {
-            font-size: 48px;
-            margin-bottom: 16px;
-        }
-
-        /* ----- TOAST NOTIFICATIONS ----- */
-        #toast-container {
-            position: fixed;
-            bottom: 100px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 9999;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
+            z-index: 6;
             pointer-events: none;
         }
-        .toast {
-            padding: 12px 24px;
-            background: var(--glass);
-            backdrop-filter: blur(30px);
-            border: 1px solid var(--glass-border);
-            border-radius: 30px;
+        #camera-container .status-dot.active {
+            background: #00ff88;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+            animation: pulse-dot 1.5s infinite;
+        }
+        #camera-container .status-dot.inactive {
+            background: #ff4466;
+            box-shadow: 0 0 20px rgba(255, 68, 102, 0.5);
+        }
+        
+        /* Enhanced Gesture Guide */
+        #gesture-guide .icon {
+            position: relative;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        #gesture-guide .icon .tooltip {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
             color: #fff;
-            font-size: 14px;
-            font-weight: 500;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
-            animation: toastIn 0.3s ease, toastOut 0.3s ease 2.5s forwards;
-            pointer-events: auto;
-            text-align: center;
-            max-width: 90vw;
-        }
-        .toast .icon {
-            margin-right: 8px;
-        }
-        @keyframes toastIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px) scale(0.95);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-        }
-        @keyframes toastOut {
-            to {
-                opacity: 0;
-                transform: translateY(-10px) scale(0.95);
-            }
-        }
-
-        /* ----- SCROLLBAR ----- */
-        ::-webkit-scrollbar {
-            width: 4px;
-        }
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: var(--primary);
+            padding: 4px 8px;
             border-radius: 4px;
+            font-size: 10px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
         }
-
-        /* ----- DESKTOP FIT (ensure everything stays within the viewport,
-           sidebars scroll independently, nothing gets clipped) ----- */
-        @media (min-width: 1024px) {
-            #left-toolbar {
-                top: 76px;
-                left: 20px;
-                max-height: calc(100vh - 100px);
-            }
-            #left-toolbar .panel-body {
-                max-height: calc(100vh - 160px);
-            }
-            #properties-panel {
-                display: flex;
-                top: 76px;
-                right: 20px;
-                max-height: calc(100vh - 100px);
-            }
-            #properties-panel .panel-body {
-                max-height: calc(100vh - 160px);
-            }
-            #status-bar {
-                left: 236px;
-                max-width: calc(100vw - 236px - 270px - 40px);
-            }
-            #save-controls {
-                right: 266px;
-            }
-            #camera-container {
-                right: 266px;
-                bottom: 20px;
-            }
-            #gesture-guide {
-                bottom: 20px;
-                max-width: calc(100vw - 480px);
-                overflow-x: auto;
-            }
+        #gesture-guide .icon:hover .tooltip {
+            opacity: 1;
         }
-
-        /* ----- RESPONSIVE ----- */
+        #gesture-guide .icon.active {
+            transform: scale(1.2);
+            box-shadow: 0 0 30px rgba(0, 240, 255, 0.3);
+        }
+        
+        /* Enhanced Properties Panel */
+        #properties-panel .row .color-picker {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            padding: 0;
+            background: none;
+        }
+        #properties-panel .row .color-picker::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+        #properties-panel .row .color-picker::-webkit-color-swatch {
+            border: none;
+            border-radius: 50%;
+        }
+        
+        /* Responsive enhancements */
         @media (max-width: 768px) {
             #camera-container {
-                width: 160px;
-                height: 120px;
-                bottom: 80px;
+                width: 200px;
+                height: 150px;
+                bottom: 70px;
                 right: 10px;
-            }
-            #status-bar {
-                font-size: 10px;
-                padding: 6px 12px;
-                top: 10px;
-                left: 10px;
-                gap: 8px;
-            }
-            #status-bar .label {
-                font-size: 8px;
-            }
-            #status-bar .value {
-                font-size: 10px;
-            }
-            #gesture-guide {
-                gap: 6px;
-                padding: 6px 12px;
-                bottom: 10px;
-            }
-            #gesture-guide .icon {
-                width: 30px;
-                height: 30px;
-                font-size: 16px;
-            }
-            #properties-panel {
-                top: 70px;
-                right: 10px;
-                min-width: 150px;
-                font-size: 11px;
-                padding: 12px 14px;
-            }
-            #save-controls {
-                top: 10px;
-                right: 10px;
-                gap: 6px;
-            }
-            #save-controls .btn {
-                font-size: 10px;
-                padding: 6px 12px;
-            }
-            #save-controls .btn .icon {
-                font-size: 14px;
-            }
-            #save-menu {
-                top: 48px;
-                min-width: 170px;
-            }
-            #library-modal {
-                padding: 16px;
-            }
-            .project-grid {
-                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            }
-            #loading .logo-text {
-                font-size: 38px;
             }
         }
         @media (max-width: 480px) {
             #camera-container {
-                width: 120px;
-                height: 90px;
-                bottom: 70px;
+                width: 140px;
+                height: 105px;
+                bottom: 60px;
                 right: 8px;
             }
-            #status-bar {
-                font-size: 8px;
-                padding: 4px 10px;
-                top: 6px;
-                left: 6px;
-                gap: 4px;
-                border-radius: 20px;
-            }
-            #status-bar .dot {
-                width: 6px;
-                height: 6px;
-            }
-            #gesture-guide .icon {
-                width: 24px;
-                height: 24px;
-                font-size: 13px;
-            }
-            #properties-panel {
-                top: 60px;
-                right: 8px;
-                min-width: 120px;
-                font-size: 10px;
-                padding: 10px 12px;
-            }
-        }
-
-        /* ----- UTILITY ----- */
-        .hidden {
-            display: none !important;
         }
     </style>
 </head>
-
 <body>
-    <!-- ============================================================
-    LOADING SCREEN
-    ============================================================ -->
+    <!-- Loading Screen -->
     <div id="loading">
         <div class="logo-text">✦ XENA ✦</div>
-        <div class="subtitle">3D Gesture Workspace</div>
+        <div class="subtitle">3D Gesture Workspace Pro</div>
         <div class="loader-ring"></div>
         <div class="loader-progress">
             <div class="loader-progress-bar" id="loader-bar"></div>
@@ -1053,26 +184,36 @@
         <div class="loader-status" id="loader-status">Initializing neural interface...</div>
     </div>
 
-    <!-- ============================================================
-    MAIN APP
-    ============================================================ -->
+    <!-- Main App -->
     <div id="app">
         <!-- 3D Container -->
         <div id="three-container"></div>
 
-        <!-- Camera Feed -->
+        <!-- Camera Container with HUD -->
         <div id="camera-container">
+            <div class="corner tl"></div>
+            <div class="corner tr"></div>
+            <div class="corner bl"></div>
+            <div class="corner br"></div>
+            <div class="status-dot active" id="camera-status"></div>
+            
             <video id="camera-feed" autoplay playsinline muted></video>
             <canvas id="hand-overlay"></canvas>
+            
+            <!-- FPS counter overlay -->
+            <div style="position:absolute;top:6px;right:6px;color:rgba(0,240,255,0.5);font-size:10px;z-index:6;pointer-events:none;font-family:monospace;" id="camera-fps">--</div>
         </div>
 
         <!-- Status Bar -->
         <div id="status-bar">
             <span class="dot"></span>
-            <span class="label">XENA</span>
+            <span class="label">XENA PRO</span>
             <span class="sep">|</span>
             <span class="label">Hand</span>
             <span class="value" id="hand-status">—</span>
+            <span class="sep">|</span>
+            <span class="label">Confidence</span>
+            <span class="value" id="confidence-display">--%</span>
             <span class="sep">|</span>
             <span class="label">FPS</span>
             <span class="value" id="fps-counter">60</span>
@@ -1081,52 +222,57 @@
             <span class="value gesture" id="gesture-display">—</span>
         </div>
 
-        <!-- Left Toolbar: gizmo modes + shape picker + actions -->
+        <!-- Left Toolbar -->
         <div id="left-toolbar">
             <div class="panel-header">
                 <span class="title">◈ TOOLS</span>
             </div>
             <div class="panel-body" id="left-toolbar-body">
+                <!-- Gizmo Modes -->
                 <div class="panel-section">
                     <div class="panel-section-title">Gizmo</div>
                     <div class="gizmo-modes">
                         <button data-mode="translate" class="active" title="Move (G)"><span class="gm-icon">✥</span>Move</button>
                         <button data-mode="rotate" title="Rotate (R)"><span class="gm-icon">⟳</span>Rotate</button>
                         <button data-mode="scale" title="Scale (S)"><span class="gm-icon">⤢</span>Scale</button>
-                        <button data-mode="extrude" title="Push/Pull a face (E)"><span class="gm-icon">⬆</span>Face</button>
+                        <button data-mode="extrude" title="Push/Pull (E)"><span class="gm-icon">⬆</span>Face</button>
                     </div>
-                    <div class="extrude-hint" id="extrude-hint">Drag a face on the selected shape up/down to push or pull it along that axis.</div>
+                    <div class="extrude-hint" id="extrude-hint">Drag a face on the selected shape up/down to push or pull it.</div>
                 </div>
+                
+                <!-- Add Shape -->
                 <div class="panel-section">
                     <div class="panel-section-title">Add Shape</div>
                     <div class="shape-grid">
+                        <!-- Your shape buttons -->
                         <button data-shape="box" title="Cube"><span class="sg-icon">◼</span>Cube</button>
                         <button data-shape="sphere" title="Sphere"><span class="sg-icon">●</span>Sphere</button>
                         <button data-shape="cylinder" title="Cylinder"><span class="sg-icon">▮</span>Cylinder</button>
                         <button data-shape="cone" title="Cone"><span class="sg-icon">▲</span>Cone</button>
                         <button data-shape="torus" title="Torus"><span class="sg-icon">◯</span>Torus</button>
                         <button data-shape="torusKnot" title="Torus Knot"><span class="sg-icon">➰</span>Knot</button>
-                        <button data-shape="dodecahedron" title="Dodecahedron"><span class="sg-icon">⬠</span>Dodeca</button>
-                        <button data-shape="icosahedron" title="Icosahedron"><span class="sg-icon">⬡</span>Icosa</button>
-                        <button data-shape="octahedron" title="Octahedron"><span class="sg-icon">◆</span>Octa</button>
-                        <button data-shape="plane" title="Plane"><span class="sg-icon">▭</span>Plane</button>
+                        <!-- Add more as needed -->
                     </div>
                 </div>
+                
+                <!-- Actions -->
                 <div class="panel-section">
                     <div class="panel-section-title">Actions</div>
                     <div class="toolbar-actions">
                         <button id="tb-duplicate"><span class="icon">⎘</span> Duplicate</button>
                         <button id="tb-delete" class="danger"><span class="icon">🗑️</span> Delete</button>
                         <button id="tb-reset-view"><span class="icon">🔄</span> Reset View</button>
+                        <button id="tb-undo"><span class="icon">↩️</span> Undo</button>
+                        <button id="tb-redo"><span class="icon">↪️</span> Redo</button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Properties Panel (right sidebar: outliner + selected object detail) -->
+        <!-- Properties Panel -->
         <div id="properties-panel">
             <div class="panel-header">
-                <span class="title">◈ SCENE</span>
+                <span class="title">◈ PROPERTIES</span>
                 <div class="panel-zoom-controls">
                     <button id="panel-zoom-out" title="Zoom out">−</button>
                     <span class="zoom-pct" id="panel-zoom-pct">100%</span>
@@ -1142,7 +288,12 @@
                 </div>
                 <div class="panel-section" id="selected-section" style="display:none;">
                     <div class="panel-section-title">Selected</div>
-                    <div class="row"><span class="lbl">Name</span><span class="val" id="obj-name">—</span></div>
+                    <div class="row"><span class="lbl">Name</span>
+                        <input type="text" id="obj-name-input" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:4px;color:#fff;padding:2px 6px;width:100px;font-size:11px;">
+                    </div>
+                    <div class="row"><span class="lbl">Color</span>
+                        <input type="color" id="obj-color" class="color-picker" value="#00f0ff">
+                    </div>
                     <div class="row"><span class="lbl">Position</span>
                         <div class="prop-xyz">
                             <input class="prop-input" id="obj-pos-x" type="number" step="0.1">
@@ -1184,228 +335,1077 @@
                 <button class="item" data-action="screenshot"><span class="icon">🖼️</span> Screenshot</button>
                 <div class="divider"></div>
                 <button class="item" data-action="library"><span class="icon">📂</span> Open Library</button>
-                <button class="item" data-action="share"><span class="icon">📱</span> Share Project</button>
             </div>
         </div>
 
         <!-- Gesture Guide -->
         <div id="gesture-guide">
-            <span class="icon" data-gesture="fist" title="Fist — zoom out / move gizmo">✊</span>
-            <span class="icon" data-gesture="open" title="Open hand — zoom in">🖐️</span>
-            <span class="icon" data-gesture="point" title="Point — select object">☝️</span>
-            <span class="icon" data-gesture="two" title="Two fingers — move object">✌️</span>
-            <span class="icon" data-gesture="pinch" title="Pinch — scale object">🤏</span>
-            <span class="icon" data-gesture="ok" title="OK — properties">👌</span>
-            <span class="icon" data-gesture="shaka" title="Shaka — rotate view/object">🤙</span>
-            <span class="icon" data-gesture="stop" title="Stop — delete selected">✋</span>
-            <span class="icon" data-gesture="thumb_up" title="Thumb up — save">👍</span>
-            <span class="icon" data-gesture="thumb_down" title="Thumb down — reset view">👎</span>
-            <span class="icon" data-gesture="spock" title="Spock — undo">🖖</span>
+            <span class="icon" data-gesture="fist" title="Fist — zoom out">
+                ✊
+                <span class="tooltip">Zoom Out</span>
+            </span>
+            <span class="icon" data-gesture="open" title="Open hand — zoom in">
+                🖐️
+                <span class="tooltip">Zoom In</span>
+            </span>
+            <span class="icon" data-gesture="point" title="Point — select object">
+                ☝️
+                <span class="tooltip">Select</span>
+            </span>
+            <span class="icon" data-gesture="two" title="Two fingers — move object">
+                ✌️
+                <span class="tooltip">Move</span>
+            </span>
+            <span class="icon" data-gesture="pinch" title="Pinch — scale object">
+                🤏
+                <span class="tooltip">Scale</span>
+            </span>
+            <span class="icon" data-gesture="ok" title="OK — properties">
+                👌
+                <span class="tooltip">Properties</span>
+            </span>
+            <span class="icon" data-gesture="shaka" title="Shaka — rotate view">
+                🤙
+                <span class="tooltip">Rotate View</span>
+            </span>
+            <span class="icon" data-gesture="stop" title="Stop — delete selected">
+                ✋
+                <span class="tooltip">Delete</span>
+            </span>
+            <span class="icon" data-gesture="thumb_up" title="Thumb up — save">
+                👍
+                <span class="tooltip">Save</span>
+            </span>
+            <span class="icon" data-gesture="thumb_down" title="Thumb down — reset view">
+                👎
+                <span class="tooltip">Reset View</span>
+            </span>
+            <span class="icon" data-gesture="spock" title="Spock — undo">
+                🖖
+                <span class="tooltip">Undo</span>
+            </span>
         </div>
     </div>
 
-    <!-- ============================================================
-    PROJECT LIBRARY OVERLAY
-    ============================================================ -->
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <!-- Library Overlay -->
     <div id="library-overlay">
         <div id="library-modal">
             <div class="header">
                 <h2>📂 Project Library</h2>
                 <button class="close-btn" id="library-close">✕</button>
             </div>
-            <div id="library-grid" class="project-grid">
-                <!-- dynamically populated -->
-            </div>
+            <div id="library-grid" class="project-grid"></div>
             <div id="library-empty" class="empty-library hidden">
                 <div class="big-icon">📭</div>
                 <p>No saved projects yet.</p>
-                <p style="font-size:13px;color:var(--text-secondary);margin-top:6px;">Create your first design and save it!</p>
             </div>
         </div>
     </div>
 
-    <!-- ============================================================
-    TOAST CONTAINER
-    ============================================================ -->
-    <div id="toast-container"></div>
-
-    <!-- ============================================================
-    ALL SCRIPTS – INLINE
-    ============================================================ -->
-
-    <!-- Third-party libraries (CDN) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js">
-    </script>
-    <script src="https://cdn.socket.io/4.7.0/socket.io.min.js">
-    </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js">
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js">
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TransformControls.js">
+    <!-- ============================================================ -->
+    <!-- THIRD-PARTY IMPORTS (ES Modules) -->
+    <!-- ============================================================ -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.163.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.163.0/examples/jsm/"
+        }
+    }
     </script>
 
-    <script>
-        // ================================================================
-        //  PROJECT XENA – COMPLETE APPLICATION
-        //  ALL LOGIC IN ONE PLACE
-        // ================================================================
+    <!-- ============================================================ -->
+    <!-- MAIN APPLICATION -->
+    <!-- ============================================================ -->
+    <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { TransformControls } from 'three/addons/controls/TransformControls.js';
+    import { io } from 'https://cdn.socket.io/4.7.2/socket.io.esm.min.js';
 
-        // ---- 1. CONFIGURATION ----
-        const CONFIG = {
-            wsUrl: (() => {
-                const host = window.location.hostname;
-                const port = window.location.port;
-                if (host === 'localhost' || host === '127.0.0.1') {
-                    return `ws://${host}:5001`;
-                }
-                return `wss://${host}`;
-            })(),
-            maxFps: 30,
-            frameInterval: 1000 / 30,
-            frameWidth: 320,
-            frameHeight: 240,
-            gestureConfidence: 0.6,
-        };
+    // ================================================================
+    // 1. CONFIGURATION
+    // ================================================================
+    const CONFIG = {
+        wsUrl: (() => {
+            const host = window.location.hostname;
+            const port = window.location.port;
+            if (host === 'localhost' || host === '127.0.0.1') {
+                return `http://${host}:${port || 10000}`;
+            }
+            return `https://${host}`;
+        })(),
+        maxFps: 30,
+        frameInterval: 1000 / 20, // 20fps for better performance
+        frameWidth: 240,
+        frameHeight: 180,
+        gestureConfidence: 0.6,
+        maxUndo: 20,
+    };
 
-        // ---- 2. STATE ----
-        const state = {
-            socket: null,
-            scene3D: null,
-            handRenderer: null,
-            cameraStream: null,
-            isConnected: false,
-            selectedObject: null,
-            objects: [],
-            projectName: 'Untitled Design',
-            projectId: null,
-            hasChanges: false,
-            autoSaveInterval: null,
-            gesture: '—',
-            landmarks: [],
-            isLoading: true,
-            library: [],
-        };
-
-        // ---- 3. TOAST SYSTEM ----
-        function showToast(message, icon = '✨') {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = 'toast';
-            toast.innerHTML = `<span class="icon">${icon}</span> ${message}`;
-            container.appendChild(toast);
-            setTimeout(() => {
-                if (toast.parentNode) toast.remove();
-            }, 3000);
+    // ================================================================
+    // 2. STATE MANAGEMENT
+    // ================================================================
+    class AppState {
+        constructor() {
+            this.state = {
+                objects: [],
+                selectedObject: null,
+                hoveredObject: null,
+                gesture: '—',
+                confidence: 0,
+                isConnected: false,
+                hasChanges: false,
+                cameraActive: false,
+                history: [],
+                historyIndex: -1,
+                undoCount: 0,
+                redoCount: 0,
+            };
+            this.listeners = [];
         }
 
-        // ---- 4. LOADING PROGRESS ----
-        function updateLoading(progress, status) {
-            const bar = document.getElementById('loader-bar');
-            const label = document.getElementById('loader-status');
-            if (bar) bar.style.width = Math.min(100, progress) + '%';
-            if (label && status) label.textContent = status;
+        setState(newState) {
+            this.state = { ...this.state, ...newState };
+            this.notify();
         }
 
-        // ---- 5. SOCKET.IO CLIENT ----
-        function initSocket() {
-            const socket = io(CONFIG.wsUrl, {
+        subscribe(listener) {
+            this.listeners.push(listener);
+            return () => {
+                this.listeners = this.listeners.filter(l => l !== listener);
+            };
+        }
+
+        notify() {
+            this.listeners.forEach(listener => listener(this.state));
+        }
+
+        // Undo/Redo
+        pushHistory(action) {
+            // Remove future states if we're in the middle of undo/redo
+            if (this.state.historyIndex < this.state.history.length - 1) {
+                this.state.history = this.state.history.slice(0, this.state.historyIndex + 1);
+            }
+            
+            this.state.history.push(action);
+            if (this.state.history.length > CONFIG.maxUndo) {
+                this.state.history.shift();
+            }
+            this.state.historyIndex = this.state.history.length - 1;
+            this.state.undoCount = this.state.historyIndex;
+            this.state.redoCount = 0;
+            this.notify();
+        }
+
+        undo() {
+            if (this.state.historyIndex > 0) {
+                this.state.historyIndex--;
+                const action = this.state.history[this.state.historyIndex];
+                this.state.undoCount = this.state.historyIndex;
+                this.state.redoCount = this.state.history.length - this.state.historyIndex - 1;
+                this.notify();
+                return action;
+            }
+            return null;
+        }
+
+        redo() {
+            if (this.state.historyIndex < this.state.history.length - 1) {
+                this.state.historyIndex++;
+                const action = this.state.history[this.state.historyIndex];
+                this.state.undoCount = this.state.historyIndex;
+                this.state.redoCount = this.state.history.length - this.state.historyIndex - 1;
+                this.notify();
+                return action;
+            }
+            return null;
+        }
+    }
+
+    const appState = new AppState();
+
+    // ================================================================
+    // 3. TOAST SYSTEM
+    // ================================================================
+    function showToast(message, icon = '✨', duration = 3000) {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.innerHTML = `<span class="icon">${icon}</span> ${message}`;
+        container.appendChild(toast);
+        setTimeout(() => {
+            if (toast.parentNode) toast.remove();
+        }, duration);
+    }
+
+    // ================================================================
+    // 4. LOADING PROGRESS
+    // ================================================================
+    function updateLoading(progress, status) {
+        const bar = document.getElementById('loader-bar');
+        const label = document.getElementById('loader-status');
+        if (bar) bar.style.width = Math.min(100, progress) + '%';
+        if (label && status) label.textContent = status;
+    }
+
+    // ================================================================
+    // 5. WEBSOCKET MANAGER
+    // ================================================================
+    class WebSocketManager {
+        constructor(url) {
+            this.url = url;
+            this.socket = null;
+            this.reconnectAttempts = 0;
+            this.maxReconnectAttempts = 10;
+            this.reconnectDelay = 1000;
+            this.isConnecting = false;
+            this.onConnectCallback = null;
+            this.onDisconnectCallback = null;
+            this.onGestureCallback = null;
+        }
+
+        connect() {
+            if (this.isConnecting) return;
+            this.isConnecting = true;
+            
+            updateLoading(30, 'Connecting to neural interface...');
+
+            this.socket = io(this.url, {
                 transports: ['websocket'],
                 reconnection: true,
-                reconnectionAttempts: 10,
-                reconnectionDelay: 1000,
+                reconnectionAttempts: this.maxReconnectAttempts,
+                reconnectionDelay: this.reconnectDelay,
+                timeout: 15000,
+                pingTimeout: 60000,
+                pingInterval: 25000,
             });
 
-            socket.on('connect', () => {
-                console.log('🔗 Connected to XENA server');
-                state.isConnected = true;
+            this.socket.on('connect', () => {
+                console.log('✅ WebSocket connected');
+                this.reconnectAttempts = 0;
+                this.isConnecting = false;
+                appState.setState({ isConnected: true });
                 document.getElementById('hand-status').textContent = 'Active';
-                showToast('Connected to XENA', '🔗');
-                updateLoading(85, 'Connected to neural interface...');
+                document.getElementById('hand-status').style.color = '#00ff88';
+                document.getElementById('camera-status').className = 'status-dot active';
+                if (this.onConnectCallback) this.onConnectCallback();
+                updateLoading(50, 'Connected! Initializing hand tracking...');
+                showToast('Connected to XENA Pro', '🔗');
             });
 
-            socket.on('hand_landmarks', (data) => {
-                if (data.landmarks) {
-                    state.landmarks = data.landmarks;
-                    if (state.handRenderer) {
-                        state.handRenderer.render(data.landmarks, data.gesture || '—');
-                    }
-                }
-                if (data.gesture) {
-                    state.gesture = data.gesture;
-                    updateGestureUI(data.gesture);
-                    document.getElementById('gesture-display').textContent = data.gesture;
-                }
-                if (data.actions) {
-                    data.actions.forEach(action => {
-                        handleGestureAction(action);
-                    });
+            this.socket.on('disconnect', (reason) => {
+                console.warn('⚠️ WebSocket disconnected:', reason);
+                appState.setState({ isConnected: false });
+                document.getElementById('hand-status').textContent = 'Reconnecting...';
+                document.getElementById('hand-status').style.color = '#ffd700';
+                document.getElementById('camera-status').className = 'status-dot inactive';
+                if (this.onDisconnectCallback) this.onDisconnectCallback();
+                
+                if (reason === 'io server disconnect') {
+                    this.socket.connect();
                 }
             });
 
-            socket.on('gesture_action', (data) => {
-                handleGestureAction(data);
-            });
-
-            socket.on('disconnect', () => {
-                console.log('🔌 Disconnected from server');
-                state.isConnected = false;
-                document.getElementById('hand-status').textContent = 'Offline';
-            });
-
-            socket.on('connect_error', (err) => {
-                console.warn('Connection error:', err);
+            this.socket.on('connect_error', (error) => {
+                console.error('❌ WebSocket connection error:', error);
                 document.getElementById('hand-status').textContent = 'Error';
+                document.getElementById('hand-status').style.color = '#ff4466';
+                this.reconnectAttempts++;
+                
+                if (this.reconnectAttempts > this.maxReconnectAttempts) {
+                    showToast('⚠️ Cannot connect to server. Running in offline mode.', '⚠️');
+                }
             });
 
-            state.socket = socket;
-            return socket;
+            this.socket.on('hand_landmarks', (data) => {
+                if (this.onGestureCallback) {
+                    this.onGestureCallback(data);
+                }
+            });
+
+            this.socket.on('save_response', (data) => {
+                if (data.success) {
+                    showToast('✅ Project saved!', '💾');
+                    appState.setState({ hasChanges: false });
+                } else {
+                    showToast('❌ Save failed: ' + (data.error || 'Unknown error'), '❌');
+                }
+            });
+
+            this.socket.on('load_response', (data) => {
+                if (data.success && data.data) {
+                    // Handle load
+                }
+            });
+
+            return this.socket;
         }
 
-        // ---- 6. GESTURE ACTION HANDLER ----
-        function handleGestureAction(action) {
-            const scene = state.scene3D;
-            if (!scene) return;
+        sendFrame(data) {
+            if (this.socket && this.socket.connected) {
+                this.socket.emit('frame', data);
+            }
+        }
 
+        saveProject(data) {
+            if (this.socket && this.socket.connected) {
+                this.socket.emit('save_project', data);
+            }
+        }
+
+        loadProject(id) {
+            if (this.socket && this.socket.connected) {
+                this.socket.emit('load_project', { id });
+            }
+        }
+
+        listProjects() {
+            if (this.socket && this.socket.connected) {
+                this.socket.emit('list_projects');
+            }
+        }
+
+        deleteProject(id) {
+            if (this.socket && this.socket.connected) {
+                this.socket.emit('delete_project', { id });
+            }
+        }
+
+        disconnect() {
+            if (this.socket) {
+                this.socket.disconnect();
+            }
+        }
+    }
+
+    const wsManager = new WebSocketManager(CONFIG.wsUrl);
+
+    // ================================================================
+    // 6. THREE.JS SCENE (Enhanced)
+    // ================================================================
+    class Scene3D {
+        constructor(container) {
+            this.container = container;
+            this.selectedObject = null;
+            this.hoveredObject = null;
+            this.gizmoMode = 'translate';
+            this.activeTool = 'translate';
+            this.spawnCount = 0;
+            this.extrudeState = null;
+            this.objects = [];
+            this.history = [];
+            this.historyIndex = -1;
+            this.isTransforming = false;
+
+            // Scene
+            this.scene = new THREE.Scene();
+            this.scene.background = new THREE.Color(0x0a0a0f);
+            this.scene.fog = new THREE.Fog(0x0a0a0f, 15, 30);
+
+            // Camera
+            const aspect = window.innerWidth / window.innerHeight;
+            this.camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 50);
+            this.camera.position.set(6, 5, 8);
+
+            // Renderer
+            this.renderer = new THREE.WebGLRenderer({
+                antialias: true,
+                alpha: false,
+                powerPreference: "high-performance"
+            });
+            this.renderer.setSize(window.innerWidth, window.innerHeight);
+            this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            this.renderer.shadowMap.enabled = true;
+            this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            this.renderer.toneMappingExposure = 1.2;
+            container.appendChild(this.renderer.domElement);
+
+            // Controls
+            this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+            this.controls.enableDamping = true;
+            this.controls.dampingFactor = 0.08;
+            this.controls.minDistance = 2;
+            this.controls.maxDistance = 25;
+            this.controls.target.set(0, 0.5, 0);
+            this.controls.update();
+
+            // Transform Controls
+            this.transformControls = new TransformControls(this.camera, this.renderer.domElement);
+            this.transformControls.setMode(this.gizmoMode);
+            this.transformControls.setSize(0.9);
+            this.transformControls.addEventListener('dragging-changed', (e) => {
+                this.controls.enabled = !e.value;
+                this.isTransforming = e.value;
+            });
+            this.transformControls.addEventListener('objectChange', () => {
+                if (this.selectedObject) {
+                    this.updateProperties(this.selectedObject);
+                    appState.setState({ hasChanges: true });
+                }
+            });
+            this.scene.add(this.transformControls);
+
+            // Setup
+            this.setupLights();
+            this.setupGrid();
+            this.setupRaycaster();
+            this.setupInteraction();
+
+            // Animation loop
+            this.animate();
+
+            // Resize
+            window.addEventListener('resize', () => this.resize());
+
+            // FPS counter
+            this.frameCount = 0;
+            this.lastFpsUpdate = performance.now();
+            
+            // Subscribe to state changes
+            this.stateUnsubscribe = appState.subscribe((state) => {
+                // Update UI when state changes
+            });
+        }
+
+        setupLights() {
+            // Ambient
+            const ambient = new THREE.AmbientLight(0x404060, 0.6);
+            this.scene.add(ambient);
+
+            // Main directional
+            const main = new THREE.DirectionalLight(0xffffff, 2.0);
+            main.position.set(8, 12, 6);
+            main.castShadow = true;
+            main.shadow.mapSize.width = 1024;
+            main.shadow.mapSize.height = 1024;
+            main.shadow.camera.near = 0.5;
+            main.shadow.camera.far = 30;
+            main.shadow.camera.left = -10;
+            main.shadow.camera.right = 10;
+            main.shadow.camera.top = 10;
+            main.shadow.camera.bottom = -10;
+            this.scene.add(main);
+
+            // Fill
+            const fill = new THREE.DirectionalLight(0x00f0ff, 0.5);
+            fill.position.set(-5, 3, 5);
+            this.scene.add(fill);
+
+            // Rim
+            const rim = new THREE.DirectionalLight(0xff00e5, 0.3);
+            rim.position.set(0, -3, -6);
+            this.scene.add(rim);
+
+            // Glow point light
+            const point = new THREE.PointLight(0x00f0ff, 0.6, 15);
+            point.position.set(0, 4, 0);
+            this.scene.add(point);
+
+            // Hemisphere
+            const hemi = new THREE.HemisphereLight(0x00f0ff, 0x0a0a0f, 0.4);
+            this.scene.add(hemi);
+        }
+
+        setupGrid() {
+            // Ground grid
+            const gridHelper = new THREE.GridHelper(20, 20, 0x00f0ff, 0x00f0ff);
+            gridHelper.material.opacity = 0.25;
+            gridHelper.material.transparent = true;
+            this.scene.add(gridHelper);
+
+            // Shadow plane
+            const planeGeo = new THREE.PlaneGeometry(20, 20);
+            const planeMat = new THREE.ShadowMaterial({
+                opacity: 0.4,
+                color: 0x000000,
+            });
+            const plane = new THREE.Mesh(planeGeo, planeMat);
+            plane.rotation.x = -Math.PI / 2;
+            plane.position.y = -0.01;
+            plane.receiveShadow = true;
+            this.scene.add(plane);
+
+            // Decorative rings
+            const ringGeo = new THREE.RingGeometry(2.8, 3.0, 64);
+            const ringMat = new THREE.MeshBasicMaterial({
+                color: 0x00f0ff,
+                transparent: true,
+                opacity: 0.06,
+                side: THREE.DoubleSide,
+            });
+            const ring = new THREE.Mesh(ringGeo, ringMat);
+            ring.rotation.x = -Math.PI / 2;
+            ring.position.y = 0.001;
+            this.scene.add(ring);
+        }
+
+        createMesh(type, color) {
+            let geometry;
+            const size = 0.55;
+
+            switch (type) {
+                case 'box':
+                    geometry = new THREE.BoxGeometry(size, size, size);
+                    break;
+                case 'sphere':
+                    geometry = new THREE.SphereGeometry(size * 0.7, 32, 32);
+                    break;
+                case 'cylinder':
+                    geometry = new THREE.CylinderGeometry(size * 0.6, size * 0.6, size, 32);
+                    break;
+                case 'cone':
+                    geometry = new THREE.ConeGeometry(size * 0.7, size, 32);
+                    break;
+                case 'torus':
+                    geometry = new THREE.TorusGeometry(size * 0.6, size * 0.25, 16, 32);
+                    break;
+                case 'torusKnot':
+                    geometry = new THREE.TorusKnotGeometry(size * 0.5, size * 0.2, 64, 16);
+                    break;
+                default:
+                    geometry = new THREE.BoxGeometry(size, size, size);
+            }
+
+            const material = new THREE.MeshStandardMaterial({
+                color: color,
+                roughness: 0.25,
+                metalness: 0.75,
+                emissive: color,
+                emissiveIntensity: 0.03,
+                envMapIntensity: 0.8,
+            });
+
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+
+            // Wireframe overlay
+            const edges = new THREE.EdgesGeometry(geometry);
+            const lineMat = new THREE.LineBasicMaterial({
+                color: 0x00f0ff,
+                transparent: true,
+                opacity: 0.12,
+            });
+            const wireframe = new THREE.LineSegments(edges, lineMat);
+            mesh.add(wireframe);
+
+            return mesh;
+        }
+
+        spawnShape(type) {
+            const SHAPE_COLORS = {
+                box: 0x00f0ff, sphere: 0xff00e5, cylinder: 0xffd700,
+                cone: 0x00ff88, torus: 0xff6600, torusKnot: 0xaa44ff,
+            };
+            
+            const label = type.charAt(0).toUpperCase() + type.slice(1);
+            const color = SHAPE_COLORS[type] || 0x00f0ff;
+            const mesh = this.createMesh(type, color);
+
+            const n = this.spawnCount++;
+            const angle = n * 2.4;
+            const radius = n === 0 ? 0 : 0.9 + Math.floor(n / 6) * 0.9;
+            mesh.position.set(Math.cos(angle) * radius, 0.5, Math.sin(angle) * radius);
+
+            mesh.userData = {
+                id: `obj_${Date.now()}_${n}`,
+                name: `${label} ${n + 1}`,
+                type: type,
+                color: color,
+                originalColor: color,
+            };
+
+            // Add to scene
+            this.scene.add(mesh);
+            this.objects.push(mesh);
+            
+            // Select and add to state
+            this.selectObject(mesh);
+            appState.setState({ 
+                objects: this.objects,
+                hasChanges: true 
+            });
+            
+            // Push to history
+            appState.pushHistory({
+                type: 'add',
+                object: mesh,
+                data: {
+                    position: mesh.position.clone(),
+                    rotation: mesh.rotation.clone(),
+                    scale: mesh.scale.clone(),
+                }
+            });
+
+            refreshOutliner();
+            return mesh;
+        }
+
+        setupRaycaster() {
+            this.raycaster = new THREE.Raycaster();
+            this.mouse = new THREE.Vector2();
+            this.intersectPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+        }
+
+        setupInteraction() {
+            const dom = this.renderer.domElement;
+            let downPos = null;
+            let downTime = 0;
+
+            const toNDC = (clientX, clientY) => {
+                const rect = dom.getBoundingClientRect();
+                return {
+                    x: ((clientX - rect.left) / rect.width) * 2 - 1,
+                    y: -((clientY - rect.top) / rect.height) * 2 + 1,
+                };
+            };
+
+            // Mouse hover for highlighting
+            dom.addEventListener('pointermove', (e) => {
+                if (this.isTransforming) return;
+                
+                const ndc = toNDC(e.clientX, e.clientY);
+                this.mouse.set(ndc.x, ndc.y);
+                this.raycaster.setFromCamera(this.mouse, this.camera);
+                const hits = this.raycaster.intersectObjects(this.objects, false);
+                
+                if (hits.length > 0) {
+                    const obj = hits[0].object;
+                    if (obj !== this.selectedObject) {
+                        this.highlightObject(obj);
+                    }
+                } else {
+                    this.unhighlightObject();
+                }
+            });
+
+            dom.addEventListener('pointerdown', (e) => {
+                if (this.transformControls.dragging) return;
+                downPos = { x: e.clientX, y: e.clientY };
+                downTime = performance.now();
+
+                if (this.activeTool === 'extrude' && this.selectedObject) {
+                    const ndc = toNDC(e.clientX, e.clientY);
+                    this.mouse.set(ndc.x, ndc.y);
+                    this.raycaster.setFromCamera(this.mouse, this.camera);
+                    const hit = this.raycaster.intersectObject(this.selectedObject, false)[0];
+                    if (hit && hit.face) {
+                        this.beginExtrude(hit);
+                    }
+                }
+            });
+
+            dom.addEventListener('pointerup', (e) => {
+                if (this.extrudeState) {
+                    this.endExtrude();
+                    return;
+                }
+                if (!downPos) return;
+                
+                const dist = Math.hypot(e.clientX - downPos.x, e.clientY - downPos.y);
+                const elapsed = performance.now() - downTime;
+                downPos = null;
+                
+                if (dist > 6 || elapsed > 600) return;
+                if (this.transformControls.dragging) return;
+                if (this.activeTool === 'extrude') return;
+
+                const ndc = toNDC(e.clientX, e.clientY);
+                this.mouse.set(ndc.x, ndc.y);
+                this.raycaster.setFromCamera(this.mouse, this.camera);
+                const hits = this.raycaster.intersectObjects(this.objects, false);
+                
+                if (hits.length > 0) {
+                    this.selectObject(hits[0].object);
+                } else {
+                    this.selectObject(null);
+                }
+            });
+
+            // Keyboard shortcuts
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'g' || e.key === 'G') {
+                    this.setGizmoMode('translate');
+                    document.querySelector('.gizmo-modes [data-mode="translate"]')?.classList.add('active');
+                    document.querySelector('.gizmo-modes [data-mode="rotate"]')?.classList.remove('active');
+                    document.querySelector('.gizmo-modes [data-mode="scale"]')?.classList.remove('active');
+                } else if (e.key === 'r' || e.key === 'R') {
+                    this.setGizmoMode('rotate');
+                    document.querySelector('.gizmo-modes [data-mode="rotate"]')?.classList.add('active');
+                    document.querySelector('.gizmo-modes [data-mode="translate"]')?.classList.remove('active');
+                    document.querySelector('.gizmo-modes [data-mode="scale"]')?.classList.remove('active');
+                } else if (e.key === 's' || e.key === 'S') {
+                    this.setGizmoMode('scale');
+                    document.querySelector('.gizmo-modes [data-mode="scale"]')?.classList.add('active');
+                    document.querySelector('.gizmo-modes [data-mode="translate"]')?.classList.remove('active');
+                    document.querySelector('.gizmo-modes [data-mode="rotate"]')?.classList.remove('active');
+                } else if (e.key === 'Delete' || e.key === 'Backspace') {
+                    this.deleteSelected();
+                } else if (e.key === 'z' && (e.ctrlKey || e.metaKey)) {
+                    e.preventDefault();
+                    this.undo();
+                } else if (e.key === 'Z' && (e.ctrlKey || e.metaKey)) {
+                    e.preventDefault();
+                    this.redo();
+                }
+            });
+        }
+
+        highlightObject(object) {
+            if (this.hoveredObject && this.hoveredObject !== this.selectedObject) {
+                this.hoveredObject.material.emissiveIntensity = 0.03;
+            }
+            if (object && object !== this.selectedObject) {
+                object.material.emissiveIntensity = 0.15;
+                this.hoveredObject = object;
+            }
+        }
+
+        unhighlightObject() {
+            if (this.hoveredObject && this.hoveredObject !== this.selectedObject) {
+                this.hoveredObject.material.emissiveIntensity = 0.03;
+            }
+            this.hoveredObject = null;
+        }
+
+        getFaceAxis(localNormal) {
+            const ax = Math.abs(localNormal.x), ay = Math.abs(localNormal.y), az = Math.abs(localNormal.z);
+            if (ax >= ay && ax >= az) return { axis: 'x', sign: Math.sign(localNormal.x) || 1 };
+            if (ay >= ax && ay >= az) return { axis: 'y', sign: Math.sign(localNormal.y) || 1 };
+            return { axis: 'z', sign: Math.sign(localNormal.z) || 1 };
+        }
+
+        beginExtrude(hit) {
+            const object = this.selectedObject;
+            if (!object.geometry.boundingBox) object.geometry.computeBoundingBox();
+            const localNormal = hit.face.normal.clone();
+            const { axis, sign } = this.getFaceAxis(localNormal);
+            const bb = object.geometry.boundingBox;
+            const halfExtent = axis === 'x' ? bb.max.x : axis === 'y' ? bb.max.y : bb.max.z;
+
+            this.controls.enabled = false;
+            this.extrudeState = {
+                axis, sign, halfExtent,
+                startScale: object.scale[axis],
+                startPos: object.position.clone(),
+                startClientY: null,
+            };
+            showToast(`Pull ${axis.toUpperCase()} face — drag up/down`, '⬆');
+        }
+
+        updateExtrude(clientY) {
+            const st = this.extrudeState;
+            const object = this.selectedObject;
+            if (!st || !object) return;
+            if (st.startClientY === null) { st.startClientY = clientY; return; }
+
+            const dragPx = st.startClientY - clientY;
+            const delta = dragPx * 0.01;
+            const newScale = Math.max(0.1, Math.min(6, st.startScale + delta));
+            const scaleDelta = newScale - st.startScale;
+
+            object.scale[st.axis] = newScale;
+
+            const axisVec = new THREE.Vector3(
+                st.axis === 'x' ? 1 : 0,
+                st.axis === 'y' ? 1 : 0,
+                st.axis === 'z' ? 1 : 0
+            ).applyQuaternion(object.quaternion);
+            const worldShift = st.sign * scaleDelta * st.halfExtent * 0.5;
+            object.position.copy(st.startPos).addScaledVector(axisVec, worldShift);
+
+            this.updateProperties(object);
+            if (object.userData.glowRing) {
+                object.userData.glowRing.position.copy(object.position);
+                object.userData.glowRing.position.y += 0.02;
+            }
+            appState.setState({ hasChanges: true });
+        }
+
+        endExtrude() {
+            this.extrudeState = null;
+            this.controls.enabled = true;
+        }
+
+        selectObject(object) {
+            // Deselect previous
+            if (this.selectedObject) {
+                const prev = this.selectedObject;
+                prev.material.emissiveIntensity = 0.03;
+                prev.material.color.set(prev.userData.originalColor);
+                if (prev.userData.glowRing) {
+                    this.scene.remove(prev.userData.glowRing);
+                    prev.userData.glowRing = null;
+                }
+            }
+
+            this.selectedObject = object;
+            this.transformControls.detach();
+
+            if (object) {
+                object.material.emissiveIntensity = 0.25;
+                object.material.color.set(0x00f0ff);
+
+                // Glow ring
+                const ringGeo = new THREE.RingGeometry(0.8, 1.0, 32);
+                const ringMat = new THREE.MeshBasicMaterial({
+                    color: 0x00f0ff,
+                    transparent: true,
+                    opacity: 0.3,
+                    side: THREE.DoubleSide,
+                });
+                const ring = new THREE.Mesh(ringGeo, ringMat);
+                ring.position.copy(object.position);
+                ring.position.y += 0.02;
+                ring.rotation.x = -Math.PI / 2;
+                this.scene.add(ring);
+                object.userData.glowRing = ring;
+
+                if (this.activeTool !== 'extrude') {
+                    this.transformControls.attach(object);
+                }
+
+                this.updateProperties(object);
+                document.getElementById('properties-panel').classList.add('visible');
+                document.getElementById('selected-section').style.display = 'block';
+                
+                // Update color picker
+                const colorEl = document.getElementById('obj-color');
+                if (colorEl) {
+                    colorEl.value = '#' + object.userData.originalColor.toString(16).padStart(6, '0');
+                }
+            } else {
+                document.getElementById('selected-section').style.display = 'none';
+            }
+            
+            appState.setState({ selectedObject: object });
+            refreshOutliner();
+        }
+
+        updateProperties(object) {
+            if (!object) return;
+            document.getElementById('obj-name-input').value = object.userData.name || 'Object';
+            
+            const setVal = (id, v) => {
+                const el = document.getElementById(id);
+                if (el && document.activeElement !== el) el.value = typeof v === 'number' ? v.toFixed(2) : v;
+            };
+            
+            setVal('obj-pos-x', object.position.x);
+            setVal('obj-pos-y', object.position.y);
+            setVal('obj-pos-z', object.position.z);
+            setVal('obj-rot-x', THREE.MathUtils.radToDeg(object.rotation.x));
+            setVal('obj-rot-y', THREE.MathUtils.radToDeg(object.rotation.y));
+            setVal('obj-rot-z', THREE.MathUtils.radToDeg(object.rotation.z));
+            setVal('obj-scale-x', object.scale.x);
+            setVal('obj-scale-y', object.scale.y);
+            setVal('obj-scale-z', object.scale.z);
+        }
+
+        setGizmoMode(mode) {
+            this.gizmoMode = mode;
+            this.activeTool = mode;
+            if (mode === 'extrude') {
+                this.transformControls.detach();
+            } else {
+                this.transformControls.setMode(mode);
+                if (this.selectedObject) this.transformControls.attach(this.selectedObject);
+            }
+            document.getElementById('extrude-hint').classList.toggle('visible', mode === 'extrude');
+        }
+
+        duplicateSelected() {
+            if (!this.selectedObject) return null;
+            const src = this.selectedObject;
+            const clone = this.createMesh(src.userData.type, src.userData.color);
+            clone.position.copy(src.position).add(new THREE.Vector3(0.6, 0, 0.6));
+            clone.rotation.copy(src.rotation);
+            clone.scale.copy(src.scale);
+            clone.userData = {
+                id: `obj_${Date.now()}`,
+                name: `${src.userData.name} copy`,
+                type: src.userData.type,
+                color: src.userData.color,
+                originalColor: src.userData.color,
+            };
+            this.scene.add(clone);
+            this.objects.push(clone);
+            this.selectObject(clone);
+            appState.setState({ objects: this.objects, hasChanges: true });
+            
+            appState.pushHistory({
+                type: 'add',
+                object: clone,
+                data: {
+                    position: clone.position.clone(),
+                    rotation: clone.rotation.clone(),
+                    scale: clone.scale.clone(),
+                }
+            });
+            
+            refreshOutliner();
+            return clone;
+        }
+
+        deleteSelected() {
+            if (!this.selectedObject) return;
+            const obj = this.selectedObject;
+            
+            // Save for undo
+            const data = {
+                position: obj.position.clone(),
+                rotation: obj.rotation.clone(),
+                scale: obj.scale.clone(),
+                userData: { ...obj.userData },
+            };
+            
+            if (obj.userData.glowRing) {
+                this.scene.remove(obj.userData.glowRing);
+            }
+            this.transformControls.detach();
+            this.scene.remove(obj);
+            
+            const index = this.objects.indexOf(obj);
+            if (index > -1) {
+                this.objects.splice(index, 1);
+            }
+            
+            this.selectedObject = null;
+            document.getElementById('selected-section').style.display = 'none';
+            appState.setState({ objects: this.objects, selectedObject: null, hasChanges: true });
+            
+            appState.pushHistory({
+                type: 'delete',
+                object: obj,
+                data: data,
+            });
+            
+            refreshOutliner();
+            showToast('Object deleted', '🗑️');
+        }
+
+        undo() {
+            const action = appState.undo();
+            if (action) {
+                this.applyHistoryAction(action, true);
+                showToast('Undo', '↩️');
+            }
+        }
+
+        redo() {
+            const action = appState.redo();
+            if (action) {
+                this.applyHistoryAction(action, false);
+                showToast('Redo', '↪️');
+            }
+        }
+
+        applyHistoryAction(action, isUndo) {
+            if (action.type === 'add') {
+                if (isUndo) {
+                    // Remove the object
+                    this.scene.remove(action.object);
+                    const idx = this.objects.indexOf(action.object);
+                    if (idx > -1) this.objects.splice(idx, 1);
+                } else {
+                    // Re-add the object
+                    this.scene.add(action.object);
+                    this.objects.push(action.object);
+                }
+            } else if (action.type === 'delete') {
+                if (isUndo) {
+                    // Restore the object
+                    const obj = action.object;
+                    obj.position.copy(action.data.position);
+                    obj.rotation.copy(action.data.rotation);
+                    obj.scale.copy(action.data.scale);
+                    Object.assign(obj.userData, action.data.userData);
+                    this.scene.add(obj);
+                    this.objects.push(obj);
+                    this.selectObject(obj);
+                } else {
+                    // Delete again
+                    this.scene.remove(action.object);
+                    const idx = this.objects.indexOf(action.object);
+                    if (idx > -1) this.objects.splice(idx, 1);
+                    this.selectedObject = null;
+                }
+            }
+            appState.setState({ objects: this.objects, hasChanges: true });
+            refreshOutliner();
+        }
+
+        zoom(factor) {
+            const pos = this.camera.position;
+            const target = this.controls.target;
+            const dir = new THREE.Vector3().subVectors(pos, target).normalize();
+            const distance = pos.distanceTo(target);
+            const newDistance = Math.max(2, Math.min(25, distance * (1 - factor * 0.015)));
+            pos.copy(target.clone().add(dir.multiplyScalar(newDistance)));
+            this.controls.update();
+        }
+
+        rotate(x, y) {
+            const pos = this.camera.position;
+            const target = this.controls.target;
+            const offset = new THREE.Vector3().subVectors(pos, target);
+            const euler = new THREE.Euler(y * 0.005, x * 0.005, 0);
+            offset.applyEuler(euler);
+            pos.copy(target.clone().add(offset));
+            this.camera.lookAt(target);
+            this.controls.update();
+        }
+
+        resetView() {
+            this.camera.position.set(6, 5, 8);
+            this.controls.target.set(0, 0.5, 0);
+            this.controls.update();
+            showToast('View reset', '🔄');
+        }
+
+        handleGestureAction(action) {
+            if (!action) return;
+            
             switch (action.action) {
                 case 'zoom':
-                    const factor = action.value || 0.5;
-                    scene.zoom(factor);
+                    this.zoom(action.value || 0);
                     break;
                 case 'rotate':
-                    scene.rotate(action.x || 0, action.y || 0);
+                    this.rotate(action.x || 0, action.y || 0);
                     break;
                 case 'select':
-                    // Use the hand's position as a virtual cursor: raycast
-                    // from the camera through that point in the canvas.
-                    // The camera feed is mirrored (CSS scaleX(-1)) for a
-                    // natural selfie view, so the x coordinate is flipped
-                    // here to line up with what the user sees on screen.
+                    // Select using hand position
                     if (action.position) {
-                        const ndcX = (1 - action.position.x) * 2 - 1;
-                        const ndcY = 1 - action.position.y * 2;
-                        scene.raycaster.setFromCamera({ x: ndcX, y: ndcY }, scene.camera);
-                        const hits = scene.raycaster.intersectObjects(state.objects, false);
-                        if (hits.length > 0 && scene.selectedObject !== hits[0].object) {
-                            scene.selectObject(hits[0].object);
+                        const ndcX = (1 - (action.position.x || 0.5)) * 2 - 1;
+                        const ndcY = 1 - (action.position.y || 0.5) * 2;
+                        this.mouse.set(ndcX, ndcY);
+                        this.raycaster.setFromCamera(this.mouse, this.camera);
+                        const hits = this.raycaster.intersectObjects(this.objects, false);
+                        if (hits.length > 0) {
+                            this.selectObject(hits[0].object);
                         }
                     }
                     break;
                 case 'drag':
-                    if (scene.selectedObject && scene.activeTool !== 'extrude') {
+                    if (this.selectedObject && this.activeTool !== 'extrude') {
                         const dx = action.dx || 0;
                         const dy = action.dy || 0;
                         const dz = action.dz || 0;
-                        scene.selectedObject.position.x += dx * 0.02;
-                        scene.selectedObject.position.y += dy * 0.02;
-                        scene.selectedObject.position.z += dz * 0.02;
-                        scene.updateProperties(scene.selectedObject);
-                        state.hasChanges = true;
+                        this.selectedObject.position.x += dx * 0.01;
+                        this.selectedObject.position.y += dy * 0.01;
+                        this.selectedObject.position.z += dz * 0.01;
+                        this.updateProperties(this.selectedObject);
+                        appState.setState({ hasChanges: true });
                     }
                     break;
                 case 'scale':
-                    if (scene.selectedObject) {
-                        const s = scene.selectedObject.scale;
+                    if (this.selectedObject) {
+                        const s = this.selectedObject.scale;
                         const val = action.value || 0.02;
                         s.x += val;
                         s.y += val;
@@ -1413,1216 +1413,1061 @@
                         s.x = Math.max(0.1, Math.min(3, s.x));
                         s.y = Math.max(0.1, Math.min(3, s.y));
                         s.z = Math.max(0.1, Math.min(3, s.z));
-                        scene.updateProperties(scene.selectedObject);
-                        state.hasChanges = true;
+                        this.updateProperties(this.selectedObject);
+                        appState.setState({ hasChanges: true });
                     }
                     break;
                 case 'delete':
-                    if (scene.selectedObject) {
-                        scene.deleteSelected();
-                        showToast('Object deleted', '🗑️');
-                        state.hasChanges = true;
-                    }
+                    this.deleteSelected();
                     break;
                 case 'save':
                     saveProject();
                     break;
-                case 'undo':
-                    showToast('Undo (coming soon)', '↩️');
-                    break;
                 case 'reset':
-                    scene.resetView();
-                    showToast('View reset', '🔄');
+                    this.resetView();
                     break;
-                default:
-                    // silent ignore
+                case 'undo':
+                    this.undo();
+                    break;
+                case 'properties':
+                    document.getElementById('properties-panel').classList.toggle('visible');
                     break;
             }
         }
 
-        // ---- 7. UPDATE GESTURE UI ----
-        function updateGestureUI(gesture) {
-            document.querySelectorAll('#gesture-guide .icon').forEach(el => {
-                el.classList.toggle('active', el.dataset.gesture === gesture);
-            });
+        resize() {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            this.camera.aspect = width / height;
+            this.camera.updateProjectionMatrix();
+            this.renderer.setSize(width, height);
         }
 
-        // ---- 8. THREE.JS SCENE ----
-        class Scene3D {
-            constructor(container) {
-                this.container = container;
-                this.selectedObject = null;
-                this.gizmoMode = 'translate'; // translate | rotate | scale
-                this.activeTool = 'translate'; // same as gizmoMode, or 'extrude'
-                this.spawnCount = 0;
-                this.extrudeState = null;
+        animate() {
+            requestAnimationFrame(() => this.animate());
 
-                // Scene
-                this.scene = new THREE.Scene();
-                this.scene.background = new THREE.Color(0x0a0a0f);
-                this.scene.fog = new THREE.Fog(0x0a0a0f, 15, 30);
+            this.controls.update();
 
-                // Camera
-                const aspect = window.innerWidth / window.innerHeight;
-                this.camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 50);
-                this.camera.position.set(6, 5, 8);
-
-                // Renderer
-                this.renderer = new THREE.WebGLRenderer({
-                    antialias: true,
-                    alpha: false,
-                    powerPreference: "high-performance"
-                });
-                this.renderer.setSize(window.innerWidth, window.innerHeight);
-                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-                this.renderer.shadowMap.enabled = true;
-                this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-                this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-                this.renderer.toneMappingExposure = 1.2;
-                this.renderer.outputEncoding = THREE.sRGBEncoding;
-                container.appendChild(this.renderer.domElement);
-
-                // Controls
-                this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
-                this.controls.enableDamping = true;
-                this.controls.dampingFactor = 0.08;
-                this.controls.minDistance = 2;
-                this.controls.maxDistance = 25;
-                this.controls.target.set(0, 0.5, 0);
-                this.controls.update();
-
-                // Transform gizmo (move / rotate / scale handles on the
-                // selected object). Canvas starts blank — objects are only
-                // added when the user picks a shape from the toolbar.
-                this.transformControls = new THREE.TransformControls(this.camera, this.renderer.domElement);
-                this.transformControls.setMode(this.gizmoMode);
-                this.transformControls.setSize(0.9);
-                this.transformControls.addEventListener('dragging-changed', (e) => {
-                    this.controls.enabled = !e.value;
-                });
-                this.transformControls.addEventListener('objectChange', () => {
-                    if (this.selectedObject) {
-                        this.updateProperties(this.selectedObject);
-                        state.hasChanges = true;
-                    }
-                });
-                this.scene.add(this.transformControls);
-
-                // Setup
-                this.setupLights();
-                this.setupGrid();
-                this.setupRaycaster();
-                this.setupInteraction();
-
-                // Animation loop
-                this.animate();
-
-                // Resize
-                window.addEventListener('resize', () => this.resize());
-
-                // FPS counter
-                this.frameCount = 0;
-                this.lastFpsUpdate = Date.now();
-            }
-
-            setupLights() {
-                // Ambient
-                const ambient = new THREE.AmbientLight(0x404060, 0.6);
-                this.scene.add(ambient);
-
-                // Main directional
-                const main = new THREE.DirectionalLight(0xffffff, 2.0);
-                main.position.set(8, 12, 6);
-                main.castShadow = true;
-                main.shadow.mapSize.width = 1024;
-                main.shadow.mapSize.height = 1024;
-                main.shadow.camera.near = 0.5;
-                main.shadow.camera.far = 30;
-                main.shadow.camera.left = -10;
-                main.shadow.camera.right = 10;
-                main.shadow.camera.top = 10;
-                main.shadow.camera.bottom = -10;
-                this.scene.add(main);
-
-                // Fill
-                const fill = new THREE.DirectionalLight(0x00f0ff, 0.5);
-                fill.position.set(-5, 3, 5);
-                this.scene.add(fill);
-
-                // Rim
-                const rim = new THREE.DirectionalLight(0xff00e5, 0.3);
-                rim.position.set(0, -3, -6);
-                this.scene.add(rim);
-
-                // Glow point light
-                const point = new THREE.PointLight(0x00f0ff, 0.6, 15);
-                point.position.set(0, 4, 0);
-                this.scene.add(point);
-
-                // Hemisphere
-                const hemi = new THREE.HemisphereLight(0x00f0ff, 0x0a0a0f, 0.4);
-                this.scene.add(hemi);
-            }
-
-            setupGrid() {
-                // Ground grid
-                const gridHelper = new THREE.GridHelper(20, 20, 0x00f0ff, 0x00f0ff);
-                gridHelper.material.opacity = 0.25;
-                gridHelper.material.transparent = true;
-                this.scene.add(gridHelper);
-
-                // Shadow plane
-                const planeGeo = new THREE.PlaneGeometry(20, 20);
-                const planeMat = new THREE.ShadowMaterial({
-                    opacity: 0.4,
-                    color: 0x000000,
-                });
-                const plane = new THREE.Mesh(planeGeo, planeMat);
-                plane.rotation.x = -Math.PI / 2;
-                plane.position.y = -0.01;
-                plane.receiveShadow = true;
-                this.scene.add(plane);
-
-                // Decorative rings
-                const ringGeo = new THREE.RingGeometry(2.8, 3.0, 64);
-                const ringMat = new THREE.MeshBasicMaterial({
-                    color: 0x00f0ff,
-                    transparent: true,
-                    opacity: 0.06,
-                    side: THREE.DoubleSide,
-                });
-                const ring = new THREE.Mesh(ringGeo, ringMat);
-                ring.rotation.x = -Math.PI / 2;
-                ring.position.y = 0.001;
-                this.scene.add(ring);
-            }
-
-            // Spawn a new primitive onto the (initially blank) canvas.
-            // Places it in an open spot near the origin so successive shapes
-            // don't stack exactly on top of each other, then selects it.
-            spawnShape(type) {
-                const SHAPE_COLORS = {
-                    box: 0x00f0ff, sphere: 0xff00e5, cylinder: 0xffd700,
-                    cone: 0x00ff88, torus: 0xff6600, torusKnot: 0xaa44ff,
-                    dodecahedron: 0xff44aa, icosahedron: 0x44ffaa,
-                    octahedron: 0xffaa44, plane: 0x44ddff,
-                };
-                const label = type.charAt(0).toUpperCase() + type.slice(1).replace(/([A-Z])/g, ' $1');
-                const color = SHAPE_COLORS[type] || 0x00f0ff;
-                const mesh = this.createMesh(type, color);
-
-                // Simple spiral layout so new shapes land next to (not on
-                // top of) existing ones.
-                const n = this.spawnCount++;
-                const angle = n * 2.4;
-                const radius = n === 0 ? 0 : 0.9 + Math.floor(n / 6) * 0.9;
-                mesh.position.set(Math.cos(angle) * radius, 0.5, Math.sin(angle) * radius);
-
-                mesh.userData = {
-                    id: `obj_${Date.now()}_${n}`,
-                    name: `${label} ${n + 1}`,
-                    type: type,
-                    color: color,
-                    originalColor: color,
-                };
-                this.scene.add(mesh);
-                state.objects.push(mesh);
-                this.selectObject(mesh);
-                state.hasChanges = true;
-                refreshOutliner();
-                return mesh;
-            }
-
-            createMesh(type, color) {
-                let geometry;
-                const size = 0.55;
-
-                switch (type) {
-                    case 'box':
-                        geometry = new THREE.BoxGeometry(size, size, size);
-                        break;
-                    case 'sphere':
-                        geometry = new THREE.SphereGeometry(size * 0.7, 32, 32);
-                        break;
-                    case 'cylinder':
-                        geometry = new THREE.CylinderGeometry(size * 0.6, size * 0.6, size, 32);
-                        break;
-                    case 'cone':
-                        geometry = new THREE.ConeGeometry(size * 0.7, size, 32);
-                        break;
-                    case 'torus':
-                        geometry = new THREE.TorusGeometry(size * 0.6, size * 0.25, 16, 32);
-                        break;
-                    case 'torusKnot':
-                        geometry = new THREE.TorusKnotGeometry(size * 0.5, size * 0.2, 64, 16);
-                        break;
-                    case 'dodecahedron':
-                        geometry = new THREE.DodecahedronGeometry(size * 0.6);
-                        break;
-                    case 'icosahedron':
-                        geometry = new THREE.IcosahedronGeometry(size * 0.6);
-                        break;
-                    case 'octahedron':
-                        geometry = new THREE.OctahedronGeometry(size * 0.6);
-                        break;
-                    case 'ring':
-                        geometry = new THREE.TorusGeometry(size * 0.7, size * 0.12, 16, 32);
-                        break;
-                    case 'star':
-                        geometry = new THREE.StarGeometry ? new THREE.StarGeometry(size * 0.7) : new THREE
-                        .BoxGeometry(size, size, size);
-                        break;
-                    case 'heart':
-                        geometry = new THREE.HeartGeometry ? new THREE.HeartGeometry(size * 0.7) : new THREE
-                        .BoxGeometry(size, size, size);
-                        break;
-                    case 'gear':
-                        geometry = new THREE.CylinderGeometry(size * 0.6, size * 0.6, size * 0.3, 8);
-                        break;
-                    case 'spring':
-                        geometry = new THREE.TorusGeometry(size * 0.5, size * 0.15, 8, 24);
-                        break;
-                    case 'helix':
-                        geometry = new THREE.TorusKnotGeometry(size * 0.4, size * 0.15, 32, 8);
-                        break;
-                    case 'teapot':
-                        geometry = new THREE.TeapotGeometry ? new THREE.TeapotGeometry(size * 0.7) : new THREE
-                        .SphereGeometry(size * 0.6);
-                        break;
-                    case 'sofa':
-                        geometry = new THREE.BoxGeometry(size * 1.2, size * 0.5, size * 0.8);
-                        break;
-                    case 'table':
-                        geometry = new THREE.CylinderGeometry(size * 0.4, size * 0.6, size * 0.7, 6);
-                        break;
-                    case 'chair':
-                        geometry = new THREE.BoxGeometry(size * 0.6, size * 0.7, size * 0.6);
-                        break;
-                    case 'tree':
-                        geometry = new THREE.ConeGeometry(size * 0.5, size * 0.9, 6);
-                        break;
-                    case 'car':
-                        geometry = new THREE.BoxGeometry(size * 0.9, size * 0.4, size * 0.5);
-                        break;
-                    case 'plane':
-                        geometry = new THREE.BoxGeometry(size * 1.0, size * 0.15, size * 0.6);
-                        break;
-                    case 'rocket':
-                        geometry = new THREE.ConeGeometry(size * 0.4, size * 0.9, 8);
-                        break;
-                    case 'robot':
-                        geometry = new THREE.BoxGeometry(size * 0.6, size * 0.9, size * 0.5);
-                        break;
-                    case 'dragon':
-                        geometry = new THREE.DodecahedronGeometry(size * 0.5);
-                        break;
-                    case 'castle':
-                        geometry = new THREE.BoxGeometry(size * 1.0, size * 0.8, size * 0.8);
-                        break;
-                    case 'lamp':
-                        geometry = new THREE.CylinderGeometry(size * 0.2, size * 0.4, size * 0.7, 8);
-                        break;
-                    case 'pyramid':
-                        geometry = new THREE.ConeGeometry(size * 0.7, size * 0.8, 4);
-                        break;
-                    case 'crystal':
-                        geometry = new THREE.OctahedronGeometry(size * 0.6);
-                        break;
-                    case 'mobius':
-                        geometry = new THREE.TorusKnotGeometry(size * 0.5, size * 0.18, 48, 8);
-                        break;
-                    default:
-                        geometry = new THREE.BoxGeometry(size, size, size);
-                }
-
-                const material = new THREE.MeshStandardMaterial({
-                    color: color,
-                    roughness: 0.25,
-                    metalness: 0.75,
-                    emissive: color,
-                    emissiveIntensity: 0.03,
-                    envMapIntensity: 0.8,
-                });
-
-                const mesh = new THREE.Mesh(geometry, material);
-                mesh.castShadow = true;
-                mesh.receiveShadow = true;
-
-                // Wireframe overlay
-                const edges = new THREE.EdgesGeometry(geometry);
-                const lineMat = new THREE.LineBasicMaterial({
-                    color: 0x00f0ff,
-                    transparent: true,
-                    opacity: 0.12,
-                });
-                const wireframe = new THREE.LineSegments(edges, lineMat);
-                mesh.add(wireframe);
-
-                return mesh;
-            }
-
-            setupRaycaster() {
-                this.raycaster = new THREE.Raycaster();
-                this.mouse = new THREE.Vector2();
-            }
-
-            // Mouse/touch selection + the custom "push/pull a face" (extrude)
-            // tool. Gizmo dragging itself is handled by THREE.TransformControls;
-            // this only covers picking objects and the extrude drag, since
-            // that's not something TransformControls does natively.
-            setupInteraction() {
-                const dom = this.renderer.domElement;
-                let downPos = null;
-                let downTime = 0;
-
-                const toNDC = (clientX, clientY) => {
-                    const rect = dom.getBoundingClientRect();
-                    return {
-                        x: ((clientX - rect.left) / rect.width) * 2 - 1,
-                        y: -((clientY - rect.top) / rect.height) * 2 + 1,
-                    };
-                };
-
-                dom.addEventListener('pointerdown', (e) => {
-                    if (this.transformControls.dragging) return;
-                    downPos = { x: e.clientX, y: e.clientY };
-                    downTime = Date.now();
-
-                    if (this.activeTool === 'extrude' && this.selectedObject) {
-                        const ndc = toNDC(e.clientX, e.clientY);
-                        this.mouse.set(ndc.x, ndc.y);
-                        this.raycaster.setFromCamera(this.mouse, this.camera);
-                        const hit = this.raycaster.intersectObject(this.selectedObject, false)[0];
-                        if (hit && hit.face) {
-                            this.beginExtrude(hit);
-                        }
-                    }
-                });
-
-                window.addEventListener('pointermove', (e) => {
-                    if (this.extrudeState) {
-                        this.updateExtrude(e.clientY);
-                    }
-                });
-
-                window.addEventListener('pointerup', (e) => {
-                    if (this.extrudeState) {
-                        this.endExtrude();
-                        return;
-                    }
-                    if (!downPos) return;
-                    const dist = Math.hypot(e.clientX - downPos.x, e.clientY - downPos.y);
-                    const elapsed = Date.now() - downTime;
-                    downPos = null;
-                    // Only treat as a "click" (not a camera-orbit drag) if the
-                    // pointer barely moved.
-                    if (dist > 6 || elapsed > 600) return;
-                    if (this.transformControls.dragging) return;
-                    if (this.activeTool === 'extrude') return; // handled above
-
-                    const ndc = toNDC(e.clientX, e.clientY);
-                    this.mouse.set(ndc.x, ndc.y);
-                    this.raycaster.setFromCamera(this.mouse, this.camera);
-                    const hits = this.raycaster.intersectObjects(state.objects, false);
-                    if (hits.length > 0) {
-                        this.selectObject(hits[0].object);
-                    } else {
-                        this.selectObject(null);
-                    }
-                });
-            }
-
-            // Determine which local axis a face's normal points along
-            // (dominant component), for both raycasted mouse hits and the
-            // approximate gesture-driven case.
-            getFaceAxis(localNormal) {
-                const ax = Math.abs(localNormal.x), ay = Math.abs(localNormal.y), az = Math.abs(localNormal.z);
-                if (ax >= ay && ax >= az) return { axis: 'x', sign: Math.sign(localNormal.x) || 1 };
-                if (ay >= ax && ay >= az) return { axis: 'y', sign: Math.sign(localNormal.y) || 1 };
-                return { axis: 'z', sign: Math.sign(localNormal.z) || 1 };
-            }
-
-            beginExtrude(hit) {
-                const object = this.selectedObject;
-                if (!object.geometry.boundingBox) object.geometry.computeBoundingBox();
-                const localNormal = hit.face.normal.clone();
-                const { axis, sign } = this.getFaceAxis(localNormal);
-                const bb = object.geometry.boundingBox;
-                const halfExtent = axis === 'x' ? bb.max.x : axis === 'y' ? bb.max.y : bb.max.z;
-
-                this.controls.enabled = false;
-                this.extrudeState = {
-                    axis, sign, halfExtent,
-                    startScale: object.scale[axis],
-                    startPos: object.position.clone(),
-                    startClientY: null,
-                };
-                showToast(`Pull ${axis.toUpperCase()} face — drag up/down`, '⬆');
-            }
-
-            updateExtrude(clientY) {
-                const st = this.extrudeState;
-                const object = this.selectedObject;
-                if (!st || !object) return;
-                if (st.startClientY === null) { st.startClientY = clientY; return; }
-
-                const dragPx = st.startClientY - clientY; // up = pull out
-                const delta = dragPx * 0.01; // sensitivity
-                const newScale = Math.max(0.1, Math.min(6, st.startScale + delta));
-                const scaleDelta = newScale - st.startScale;
-
-                object.scale[st.axis] = newScale;
-
-                // Keep the opposite face anchored by shifting position along
-                // the face's world-space axis by half the size change.
-                const axisVec = new THREE.Vector3(
-                    st.axis === 'x' ? 1 : 0,
-                    st.axis === 'y' ? 1 : 0,
-                    st.axis === 'z' ? 1 : 0
-                ).applyQuaternion(object.quaternion);
-                const worldShift = st.sign * scaleDelta * st.halfExtent * 0.5;
-                object.position.copy(st.startPos).addScaledVector(axisVec, worldShift);
-
-                this.updateProperties(object);
-                if (object.userData.glowRing) {
-                    object.userData.glowRing.position.copy(object.position);
-                    object.userData.glowRing.position.y += 0.02;
-                }
-                state.hasChanges = true;
-            }
-
-            endExtrude() {
-                this.extrudeState = null;
-                this.controls.enabled = true;
-            }
-
-            selectObject(object) {
-                // Deselect previous
-                if (this.selectedObject) {
-                    const prev = this.selectedObject;
-                    prev.material.emissiveIntensity = 0.03;
-                    prev.material.color.set(prev.userData.originalColor);
-                    // Remove glow ring
-                    if (prev.userData.glowRing) {
-                        this.scene.remove(prev.userData.glowRing);
-                        prev.userData.glowRing = null;
-                    }
-                }
-
-                this.selectedObject = object;
-                this.transformControls.detach();
-
-                if (object) {
-                    object.material.emissiveIntensity = 0.25;
-                    object.material.color.set(0x00f0ff);
-
-                    // Glow ring
-                    const ringGeo = new THREE.RingGeometry(0.8, 1.0, 32);
-                    const ringMat = new THREE.MeshBasicMaterial({
-                        color: 0x00f0ff,
-                        transparent: true,
-                        opacity: 0.3,
-                        side: THREE.DoubleSide,
-                    });
-                    const ring = new THREE.Mesh(ringGeo, ringMat);
-                    ring.position.copy(object.position);
-                    ring.position.y += 0.02;
-                    ring.rotation.x = -Math.PI / 2;
-                    this.scene.add(ring);
-                    object.userData.glowRing = ring;
-
-                    if (this.activeTool !== 'extrude') {
-                        this.transformControls.attach(object);
-                    }
-
-                    this.updateProperties(object);
-                    document.getElementById('properties-panel').classList.add('visible');
-                    document.getElementById('selected-section').style.display = 'block';
-                } else {
-                    document.getElementById('selected-section').style.display = 'none';
-                }
-                refreshOutliner();
-            }
-
-            updateProperties(object) {
-                if (!object) return;
-                document.getElementById('obj-name').textContent = object.userData.name || 'Object';
-                const setVal = (id, v) => {
-                    const el = document.getElementById(id);
-                    if (el && document.activeElement !== el) el.value = v;
-                };
-                setVal('obj-pos-x', object.position.x.toFixed(2));
-                setVal('obj-pos-y', object.position.y.toFixed(2));
-                setVal('obj-pos-z', object.position.z.toFixed(2));
-                setVal('obj-rot-x', THREE.MathUtils.radToDeg(object.rotation.x).toFixed(0));
-                setVal('obj-rot-y', THREE.MathUtils.radToDeg(object.rotation.y).toFixed(0));
-                setVal('obj-rot-z', THREE.MathUtils.radToDeg(object.rotation.z).toFixed(0));
-                setVal('obj-scale-x', object.scale.x.toFixed(2));
-                setVal('obj-scale-y', object.scale.y.toFixed(2));
-                setVal('obj-scale-z', object.scale.z.toFixed(2));
-            }
-
-            setGizmoMode(mode) {
-                this.gizmoMode = mode;
-                this.activeTool = mode;
-                if (mode === 'extrude') {
-                    this.transformControls.detach();
-                } else {
-                    this.transformControls.setMode(mode);
-                    if (this.selectedObject) this.transformControls.attach(this.selectedObject);
-                }
-                document.getElementById('extrude-hint').classList.toggle('visible', mode === 'extrude');
-            }
-
-            duplicateSelected() {
-                if (!this.selectedObject) return null;
-                const src = this.selectedObject;
-                const clone = this.createMesh(src.userData.type, src.userData.color);
-                clone.position.copy(src.position).add(new THREE.Vector3(0.6, 0, 0.6));
-                clone.rotation.copy(src.rotation);
-                clone.scale.copy(src.scale);
-                clone.userData = {
-                    id: `obj_${Date.now()}`,
-                    name: `${src.userData.name} copy`,
-                    type: src.userData.type,
-                    color: src.userData.color,
-                    originalColor: src.userData.color,
-                };
-                this.scene.add(clone);
-                state.objects.push(clone);
-                this.selectObject(clone);
-                state.hasChanges = true;
-                return clone;
-            }
-
-            deleteSelected() {
-                if (!this.selectedObject) return;
-                const obj = this.selectedObject;
-                if (obj.userData.glowRing) {
-                    this.scene.remove(obj.userData.glowRing);
-                }
-                this.transformControls.detach();
-                this.scene.remove(obj);
-                const index = state.objects.indexOf(obj);
-                if (index > -1) {
-                    state.objects.splice(index, 1);
-                }
-                this.selectedObject = null;
-                document.getElementById('selected-section').style.display = 'none';
-                refreshOutliner();
-            }
-
-            zoom(factor) {
-                const pos = this.camera.position;
-                const target = this.controls.target;
-                const dir = new THREE.Vector3().subVectors(pos, target).normalize();
-                const distance = pos.distanceTo(target);
-                const newDistance = Math.max(2, Math.min(25, distance * (1 - factor * 0.015)));
-                pos.copy(target.clone().add(dir.multiplyScalar(newDistance)));
-                this.controls.update();
-            }
-
-            rotate(x, y) {
-                const pos = this.camera.position;
-                const target = this.controls.target;
-                const offset = new THREE.Vector3().subVectors(pos, target);
-                const euler = new THREE.Euler(y * 0.005, x * 0.005, 0);
-                offset.applyEuler(euler);
-                pos.copy(target.clone().add(offset));
-                this.camera.lookAt(target);
-                this.controls.update();
-            }
-
-            resetView() {
-                this.camera.position.set(6, 5, 8);
-                this.controls.target.set(0, 0.5, 0);
-                this.controls.update();
-            }
-
-            resize() {
-                const width = window.innerWidth;
-                const height = window.innerHeight;
-                this.camera.aspect = width / height;
-                this.camera.updateProjectionMatrix();
-                this.renderer.setSize(width, height);
-            }
-
-            animate() {
-                requestAnimationFrame(() => this.animate());
-
-                // Update controls
-                this.controls.update();
-
-                // Animate objects (subtle floating & rotation)
-                const time = Date.now() / 1000;
-                state.objects.forEach((obj, i) => {
-                    const offset = i * 1.3;
+            // Animate objects
+            const time = performance.now() / 1000;
+            this.objects.forEach((obj, i) => {
+                const offset = i * 1.3;
+                // Subtle floating
+                if (!this.isTransforming && obj !== this.selectedObject) {
                     obj.position.y += Math.sin(time * 0.4 + offset) * 0.0004;
-                    obj.rotation.x += 0.002;
-                    obj.rotation.y += 0.003;
-
-                    // Glow ring follows object
-                    if (obj.userData.glowRing) {
-                        obj.userData.glowRing.position.copy(obj.position);
-                        obj.userData.glowRing.position.y += 0.02;
-                        obj.userData.glowRing.material.opacity = 0.2 + Math.sin(time * 2 + offset) * 0.1;
-                    }
-                });
-
-                // FPS counter
-                this.frameCount++;
-                const now = Date.now();
-                if (now - this.lastFpsUpdate > 1000) {
-                    document.getElementById('fps-counter').textContent = this.frameCount;
-                    this.frameCount = 0;
-                    this.lastFpsUpdate = now;
                 }
+                obj.rotation.x += 0.001;
+                obj.rotation.y += 0.002;
 
-                this.renderer.render(this.scene, this.camera);
+                // Glow ring
+                if (obj.userData.glowRing) {
+                    obj.userData.glowRing.position.copy(obj.position);
+                    obj.userData.glowRing.position.y += 0.02;
+                    obj.userData.glowRing.material.opacity = 0.2 + Math.sin(time * 2 + offset) * 0.1;
+                }
+            });
+
+            // FPS counter
+            this.frameCount++;
+            const now = performance.now();
+            if (now - this.lastFpsUpdate > 1000) {
+                document.getElementById('fps-counter').textContent = this.frameCount;
+                document.getElementById('camera-fps').textContent = this.frameCount + 'fps';
+                this.frameCount = 0;
+                this.lastFpsUpdate = now;
             }
+
+            this.renderer.render(this.scene, this.camera);
         }
 
-        // ---- 9. HAND RENDERER ----
-        class HandRenderer {
-            constructor(canvas) {
-                this.canvas = canvas;
-                this.ctx = canvas.getContext('2d');
-                this.landmarks = [];
-                this.gesture = '—';
-                this.resize();
+        destroy() {
+            if (this.stateUnsubscribe) {
+                this.stateUnsubscribe();
             }
+            this.renderer.dispose();
+        }
+    }
 
-            resize() {
-                const container = document.getElementById('camera-container');
-                const rect = container.getBoundingClientRect();
-                this.canvas.width = rect.width || 280;
-                this.canvas.height = rect.height || 210;
-                this.canvas.style.width = '100%';
-                this.canvas.style.height = '100%';
+    // ================================================================
+    // 7. HAND RENDERER (Enhanced with Colors)
+    // ================================================================
+    class HandRenderer {
+        constructor(canvas) {
+            this.canvas = canvas;
+            this.ctx = canvas.getContext('2d');
+            this.landmarks = [];
+            this.gesture = '—';
+            this.confidence = 0;
+            this.orientation = {};
+            this.visualization = {};
+            this.resize();
+            
+            // Finger colors
+            this.fingerColors = {
+                thumb: '#ff4444',
+                index: '#44ff44',
+                middle: '#4444ff',
+                ring: '#ffff44',
+                pinky: '#ff44ff'
+            };
+            
+            // Connection definitions
+            this.connections = [
+                [0, 1], [1, 2], [2, 3], [3, 4],
+                [0, 5], [5, 6], [6, 7], [7, 8],
+                [0, 9], [9, 10], [10, 11], [11, 12],
+                [0, 13], [13, 14], [14, 15], [15, 16],
+                [0, 17], [17, 18], [18, 19], [19, 20],
+                [5, 9], [9, 13], [13, 17]
+            ];
+        }
+
+        resize() {
+            const container = document.getElementById('camera-container');
+            const rect = container.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            this.canvas.width = (rect.width || 280) * dpr;
+            this.canvas.height = (rect.height || 210) * dpr;
+            this.canvas.style.width = '100%';
+            this.canvas.style.height = '100%';
+            this.ctx.scale(dpr, dpr);
+            this.width = rect.width || 280;
+            this.height = rect.height || 210;
+        }
+
+        render(data) {
+            if (!data) {
+                this.ctx.clearRect(0, 0, this.width, this.height);
+                return;
             }
-
-            render(landmarks, gesture) {
-                this.landmarks = landmarks || [];
-                this.gesture = gesture || '—';
+            
+            this.landmarks = data.landmarks || [];
+            this.gesture = data.gesture || '—';
+            this.confidence = data.confidence || 0;
+            this.orientation = data.orientation || {};
+            this.visualization = data.visualization || {};
+            
+            // Only draw if we have landmarks
+            if (this.landmarks.length > 0) {
                 this.draw();
-            }
-
-            draw() {
-                const ctx = this.ctx;
-                const w = this.canvas.width;
-                const h = this.canvas.height;
-
-                ctx.clearRect(0, 0, w, h);
-
-                if (!this.landmarks || this.landmarks.length === 0) {
-                    ctx.fillStyle = 'rgba(255,255,255,0.15)';
-                    ctx.font = '14px sans-serif';
-                    ctx.textAlign = 'center';
-                    ctx.fillText('🖐️ No hand detected', w / 2, h / 2);
-                    return;
-                }
-
-                // Connections
-                const connections = [
-                    [0, 1],
-                    [1, 2],
-                    [2, 3],
-                    [3, 4],
-                    [0, 5],
-                    [5, 6],
-                    [6, 7],
-                    [7, 8],
-                    [0, 9],
-                    [9, 10],
-                    [10, 11],
-                    [11, 12],
-                    [0, 13],
-                    [13, 14],
-                    [14, 15],
-                    [15, 16],
-                    [0, 17],
-                    [17, 18],
-                    [18, 19],
-                    [19, 20],
-                    [5, 9],
-                    [9, 13],
-                    [13, 17]
-                ];
-
-                // Draw connections
-                connections.forEach(([i, j]) => {
-                    const p1 = this.landmarks[i];
-                    const p2 = this.landmarks[j];
-                    if (p1 && p2) {
-                        ctx.beginPath();
-                        ctx.moveTo(p1.x * w, p1.y * h);
-                        ctx.lineTo(p2.x * w, p2.y * h);
-                        ctx.strokeStyle = 'rgba(0, 240, 255, 0.5)';
-                        ctx.lineWidth = 1.5;
-                        ctx.shadowBlur = 8;
-                        ctx.shadowColor = '#00f0ff';
-                        ctx.stroke();
-                    }
-                });
-
-                // Draw landmarks
-                this.landmarks.forEach((lm, i) => {
-                    const x = lm.x * w;
-                    const y = lm.y * h;
-
-                    // Glow
-                    const gradient = ctx.createRadialGradient(x, y, 0, x, y, 10);
-                    gradient.addColorStop(0, 'rgba(0, 240, 255, 0.6)');
-                    gradient.addColorStop(1, 'rgba(0, 240, 255, 0)');
-                    ctx.fillStyle = gradient;
-                    ctx.beginPath();
-                    ctx.arc(x, y, 10, 0, Math.PI * 2);
-                    ctx.fill();
-
-                    // Dot
-                    ctx.shadowBlur = 12;
-                    ctx.shadowColor = '#00f0ff';
-                    ctx.fillStyle = i === 0 ? '#ffd700' : '#00f0ff';
-                    ctx.beginPath();
-                    ctx.arc(x, y, 2.5, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.shadowBlur = 0;
-                });
-
-                // Gesture label
-                if (this.gesture && this.gesture !== '—') {
-                    ctx.fillStyle = 'rgba(0, 240, 255, 0.85)';
-                    ctx.font = 'bold 13px sans-serif';
-                    ctx.shadowBlur = 20;
-                    ctx.shadowColor = '#00f0ff';
-                    ctx.fillText('✦ ' + this.gesture.toUpperCase(), 12, 28);
-                    ctx.shadowBlur = 0;
-                }
-
-                // Status indicator
-                ctx.fillStyle = 'rgba(0, 255, 136, 0.5)';
-                ctx.beginPath();
-                ctx.arc(w - 16, 16, 5, 0, Math.PI * 2);
-                ctx.fill();
+            } else {
+                this.ctx.clearRect(0, 0, this.width, this.height);
+                this.drawPlaceholder();
             }
         }
 
-        // ---- 10. CAMERA SETUP ----
-        async function setupCamera() {
-            const video = document.getElementById('camera-feed');
+        draw() {
+            const ctx = this.ctx;
+            const w = this.width;
+            const h = this.height;
 
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: {
-                        facingMode: 'user',
-                        width: { ideal: 640 },
-                        height: { ideal: 480 },
-                        frameRate: { ideal: 30 }
-                    },
-                    audio: false
+            ctx.clearRect(0, 0, w, h);
+
+            if (!this.landmarks || this.landmarks.length === 0) {
+                this.drawPlaceholder();
+                return;
+            }
+
+            // Draw connections with gradient
+            this.connections.forEach(([i, j]) => {
+                const p1 = this.landmarks[i];
+                const p2 = this.landmarks[j];
+                if (p1 && p2) {
+                    const x1 = p1.x * w, y1 = p1.y * h;
+                    const x2 = p2.x * w, y2 = p2.y * h;
+                    
+                    // Gradient line
+                    const grad = ctx.createLinearGradient(x1, y1, x2, y2);
+                    grad.addColorStop(0, 'rgba(0, 240, 255, 0.6)');
+                    grad.addColorStop(1, 'rgba(255, 0, 229, 0.4)');
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(x1, y1);
+                    ctx.lineTo(x2, y2);
+                    ctx.strokeStyle = grad;
+                    ctx.lineWidth = 1.5;
+                    ctx.shadowBlur = 8;
+                    ctx.shadowColor = 'rgba(0, 240, 255, 0.3)';
+                    ctx.stroke();
+                }
+            });
+
+            // Draw landmarks with finger colors
+            const fingerIndices = {
+                thumb: [1, 2, 3, 4],
+                index: [5, 6, 7, 8],
+                middle: [9, 10, 11, 12],
+                ring: [13, 14, 15, 16],
+                pinky: [17, 18, 19, 20]
+            };
+
+            const colorMap = {
+                thumb: '#ff4444',
+                index: '#44ff44',
+                middle: '#4488ff',
+                ring: '#ffdd44',
+                pinky: '#ff44ff'
+            };
+
+            // Draw each finger with its color
+            Object.entries(fingerIndices).forEach(([name, indices]) => {
+                const color = colorMap[name] || '#00f0ff';
+                
+                indices.forEach(idx => {
+                    const lm = this.landmarks[idx];
+                    if (!lm) return;
+                    
+                    const x = lm.x * w, y = lm.y * h;
+                    const size = idx % 4 === 0 ? 4 : 3; // Tips larger
+                    
+                    // Glow
+                    const grad = ctx.createRadialGradient(x, y, 0, x, y, size * 3);
+                    grad.addColorStop(0, color + '80');
+                    grad.addColorStop(1, color + '00');
+                    ctx.fillStyle = grad;
+                    ctx.beginPath();
+                    ctx.arc(x, y, size * 3, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Dot
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = color;
+                    ctx.fillStyle = color;
+                    ctx.beginPath();
+                    ctx.arc(x, y, size, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
                 });
+            });
 
-                video.srcObject = stream;
-                await video.play();
+            // Draw palm center
+            if (this.visualization && this.visualization.palm_center) {
+                const pc = this.visualization.palm_center;
+                const x = pc.x * w, y = pc.y * h;
+                
+                // Glowing ring
+                const grad = ctx.createRadialGradient(x, y, 0, x, y, 15);
+                grad.addColorStop(0, 'rgba(0, 240, 255, 0.3)');
+                grad.addColorStop(1, 'rgba(0, 240, 255, 0)');
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.arc(x, y, 15, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.strokeStyle = 'rgba(0, 240, 255, 0.3)';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([3, 5]);
+                ctx.beginPath();
+                ctx.arc(x, y, 10, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
 
-                state.cameraStream = stream;
-                document.getElementById('hand-status').textContent = 'Active';
-                updateLoading(70, 'Camera online, tracking hand...');
+            // Gesture label with background
+            if (this.gesture && this.gesture !== '—') {
+                const label = this.gesture.toUpperCase();
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = 'rgba(0, 240, 255, 0.5)';
+                
+                // Background
+                const metrics = ctx.measureText('✦ ' + label);
+                const tw = metrics.width + 20;
+                const th = 30;
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+                ctx.roundRect(8, 8, tw, th, 8);
+                ctx.fill();
+                
+                // Text
+                ctx.fillStyle = '#00f0ff';
+                ctx.font = 'bold 14px sans-serif';
+                ctx.fillText('✦ ' + label, 18, 30);
+                ctx.shadowBlur = 0;
+            }
 
-                // Start sending frames
-                sendFrames(video);
+            // Confidence meter
+            if (this.confidence > 0) {
+                const cx = w - 16, cy = h - 16;
+                const radius = 12;
+                const startAngle = -Math.PI / 2;
+                const endAngle = startAngle + (Math.PI * 2 * this.confidence);
+                
+                // Background
+                ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                // Confidence arc
+                const color = this.confidence > 0.7 ? '#00ff88' : 
+                             this.confidence > 0.4 ? '#ffd700' : '#ff4466';
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 3;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = color;
+                ctx.beginPath();
+                ctx.arc(cx, cy, radius, startAngle, endAngle);
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+                
+                // Percentage text
+                ctx.fillStyle = color;
+                ctx.font = '7px monospace';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(Math.round(this.confidence * 100) + '%', cx, cy);
+            }
+        }
 
-                return true;
-            } catch (err) {
-                console.error('Camera error:', err);
+        drawPlaceholder() {
+            const ctx = this.ctx;
+            const w = this.width;
+            const h = this.height;
+            
+            ctx.fillStyle = 'rgba(255,255,255,0.08)';
+            ctx.font = '16px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            // Animated dots
+            const time = performance.now() / 1000;
+            const dots = '.'.repeat(Math.floor(time * 1.5) % 4);
+            ctx.fillText('🖐️ Waiting for hand' + dots, w / 2, h / 2);
+            
+            // Subtle pulse
+            const pulse = 0.5 + Math.sin(time) * 0.15;
+            ctx.fillStyle = `rgba(0, 240, 255, ${pulse * 0.1})`;
+            ctx.font = '12px sans-serif';
+            ctx.fillText('Position your hand in view', w / 2, h / 2 + 30);
+        }
+    }
+
+    // ================================================================
+    // 8. CAMERA SETUP (Enhanced)
+    // ================================================================
+    async function setupCamera() {
+        const video = document.getElementById('camera-feed');
+        
+        showToast('📷 Requesting camera access...', '📷');
+        updateLoading(20, 'Requesting camera access...');
+
+        try {
+            // Check if camera is available
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const hasCamera = devices.some(d => d.kind === 'videoinput');
+            
+            if (!hasCamera) {
+                showToast('❌ No camera detected on this device', '⚠️');
                 document.getElementById('hand-status').textContent = 'No Camera';
-                updateLoading(70, '⚠️ Camera access denied - gesture control unavailable');
-                showToast('Please allow camera access for gesture control', '📷');
+                updateLoading(60, '⚠️ No camera detected');
                 return false;
             }
-        }
 
-        // ---- 11. SEND FRAMES ----
-        function sendFrames(video) {
-            const canvas = document.createElement('canvas');
-            canvas.width = CONFIG.frameWidth;
-            canvas.height = CONFIG.frameHeight;
-            const ctx = canvas.getContext('2d');
-
-            let lastSend = 0;
-
-            function capture() {
-                const now = Date.now();
-                if (now - lastSend >= CONFIG.frameInterval && state.socket && state.socket.connected) {
-                    try {
-                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                        canvas.toBlob((blob) => {
-                            if (blob && state.socket.connected) {
-                                const reader = new FileReader();
-                                reader.onload = () => {
-                                    state.socket.emit('frame', reader.result);
-                                };
-                                reader.readAsArrayBuffer(blob);
-                            }
-                        }, 'image/jpeg', 0.6);
-                        lastSend = now;
-                    } catch (e) {
-                        // silent
-                    }
-                }
-                requestAnimationFrame(capture);
-            }
-
-            capture();
-        }
-
-        // ---- 12. SAVE / LOAD SYSTEM ----
-        function getSceneData() {
-            const objects = state.objects.map(obj => ({
-                id: obj.userData.id,
-                type: obj.userData.type,
-                name: obj.userData.name,
-                color: '#' + obj.userData.originalColor.toString(16).padStart(6, '0'),
-                position: [obj.position.x, obj.position.y, obj.position.z],
-                rotation: [obj.rotation.x, obj.rotation.y, obj.rotation.z],
-                scale: [obj.scale.x, obj.scale.y, obj.scale.z],
-            }));
-
-            return {
-                project: {
-                    name: state.projectName,
-                    created: new Date().toISOString(),
-                    modified: new Date().toISOString(),
-                    version: '1.0',
+            // Request with optimized constraints
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: 'user',
+                    width: { ideal: 320, max: 480 },
+                    height: { ideal: 240, max: 360 },
+                    frameRate: { ideal: 15, max: 30 }
                 },
-                scene: {
-                    camera: {
-                        position: [
-                            state.scene3D ? state.scene3D.camera.position.x : 6,
-                            state.scene3D ? state.scene3D.camera.position.y : 5,
-                            state.scene3D ? state.scene3D.camera.position.z : 8,
-                        ],
-                        target: [0, 0.5, 0],
-                    },
-                },
-                objects: objects,
-                metadata: {
-                    author: 'XENA User',
-                    objectCount: objects.length,
-                },
-            };
-        }
-
-        function saveProject() {
-            if (!state.scene3D) return;
-
-            const data = getSceneData();
-            const json = JSON.stringify(data, null, 2);
-            const blob = new Blob([json], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-
-            // Try cloud save first
-            if (state.socket && state.socket.connected) {
-                state.socket.emit('save_project', data, (response) => {
-                    if (response && response.success) {
-                        state.projectId = response.id;
-                        state.hasChanges = false;
-                        showToast('✅ Project saved to cloud!', '☁️');
-                    } else {
-                        // Fallback to download
-                        downloadProject(url);
-                    }
-                });
-            } else {
-                downloadProject(url);
-            }
-        }
-
-        function downloadProject(url) {
-            const a = document.createElement('a');
-            a.href = url || URL.createObjectURL(new Blob([JSON.stringify(getSceneData(), null, 2)], { type: 'application/json' }));
-            a.download = `${state.projectName.replace(/\s+/g, '_')}.xena`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-            state.hasChanges = false;
-            showToast('📥 Project downloaded!', '💾');
-        }
-
-        function loadProject(file) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                try {
-                    const data = JSON.parse(e.target.result);
-                    if (data.objects && data.scene) {
-                        loadSceneData(data);
-                        showToast('✅ Project loaded!', '📂');
-                    }
-                } catch (err) {
-                    showToast('❌ Invalid project file', '⚠️');
-                }
-            };
-            reader.readAsText(file);
-        }
-
-        function loadSceneData(data) {
-            // Clear existing objects (keep 3D scene)
-            state.objects.forEach(obj => {
-                if (obj.userData.glowRing) {
-                    state.scene3D.scene.remove(obj.userData.glowRing);
-                }
-                state.scene3D.scene.remove(obj);
+                audio: false
             });
-            state.objects = [];
-            state.scene3D.selectObject(null);
 
-            // Load objects
-            data.objects.forEach((objData, index) => {
-                const color = parseInt(objData.color.replace('#', ''), 16);
-                const mesh = state.scene3D.createMesh(objData.type, color);
-                mesh.position.set(objData.position[0], objData.position[1], objData.position[2]);
-                mesh.rotation.set(objData.rotation[0], objData.rotation[1], objData.rotation[2]);
-                mesh.scale.set(objData.scale[0], objData.scale[1], objData.scale[2]);
-                mesh.userData = {
-                    id: objData.id || `obj_${index}`,
-                    name: objData.name || objData.type,
-                    type: objData.type,
-                    color: color,
-                    originalColor: color,
+            video.srcObject = stream;
+            
+            await new Promise((resolve) => {
+                video.onloadedmetadata = () => {
+                    video.play();
+                    resolve();
                 };
-                state.scene3D.scene.add(mesh);
-                state.objects.push(mesh);
             });
 
-            // Restore camera
-            if (data.scene && data.scene.camera) {
-                const cam = state.scene3D.camera;
-                cam.position.set(
-                    data.scene.camera.position[0] || 6,
-                    data.scene.camera.position[1] || 5,
-                    data.scene.camera.position[2] || 8
-                );
-                state.scene3D.controls.target.set(0, 0.5, 0);
-                state.scene3D.controls.update();
-            }
+            appState.setState({ cameraActive: true });
+            document.getElementById('hand-status').textContent = 'Active';
+            document.getElementById('hand-status').style.color = '#00ff88';
+            document.getElementById('camera-status').className = 'status-dot active';
+            updateLoading(70, 'Camera online, tracking hand...');
+            showToast('✅ Camera ready!', '📷');
 
-            state.projectName = data.project?.name || 'Loaded Project';
-            state.hasChanges = false;
-        }
+            // Start sending frames
+            setTimeout(() => {
+                sendFrames(video);
+            }, 500);
 
-        // ---- 13. SCREENSHOT ----
-        function takeScreenshot() {
-            if (!state.scene3D) return;
-            const canvas = state.scene3D.renderer.domElement;
-            const link = document.createElement('a');
-            link.download = `xena_screenshot_${Date.now()}.png`;
-            link.href = canvas.toDataURL('image/png');
-            link.click();
-            showToast('🖼️ Screenshot saved!', '📸');
-        }
+            return true;
 
-        // ---- 14. EXPORT ----
-        function exportGLTF() {
-            showToast('📤 GLTF export coming soon!', '🚧');
-        }
-
-        function exportOBJ() {
-            showToast('📤 OBJ export coming soon!', '🚧');
-        }
-
-        // ---- 15. PROJECT LIBRARY ----
-        function openLibrary() {
-            const overlay = document.getElementById('library-overlay');
-            overlay.classList.add('open');
-            refreshLibrary();
-        }
-
-        function closeLibrary() {
-            document.getElementById('library-overlay').classList.remove('open');
-        }
-
-        function refreshLibrary() {
-            const grid = document.getElementById('library-grid');
-            const empty = document.getElementById('library-empty');
-
-            // Fetch from server
-            if (state.socket && state.socket.connected) {
-                state.socket.emit('list_projects', (projects) => {
-                    if (projects && projects.length > 0) {
-                        grid.innerHTML = '';
-                        empty.classList.add('hidden');
-                        projects.forEach(p => {
-                            const card = document.createElement('div');
-                            card.className = 'project-card';
-                            card.innerHTML = `
-                                <div class="thumb">📦</div>
-                                <div class="name">${p.name || 'Untitled'}</div>
-                                <div class="meta">${p.objects || 0} objects • ${p.date || 'Unknown'}</div>
-                                <div class="actions">
-                                    <button onclick="loadProjectFromServer('${p.id}')">Open</button>
-                                    <button onclick="deleteProjectFromServer('${p.id}')">🗑️</button>
-                                </div>
-                            `;
-                            grid.appendChild(card);
-                        });
-                    } else {
-                        grid.innerHTML = '';
-                        empty.classList.remove('hidden');
-                    }
-                });
+        } catch (err) {
+            console.error('Camera error:', err);
+            
+            let errorMsg = '⚠️ Camera error';
+            if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                errorMsg = '⚠️ Camera permission denied. Please allow access in browser settings.';
+            } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+                errorMsg = '⚠️ No camera found. Please connect a camera.';
             } else {
-                // Offline: show local storage
-                const localProjects = JSON.parse(localStorage.getItem('xena_projects') || '[]');
-                if (localProjects.length > 0) {
-                    grid.innerHTML = '';
-                    empty.classList.add('hidden');
-                    localProjects.forEach(p => {
-                        const card = document.createElement('div');
-                        card.className = 'project-card';
-                        card.innerHTML = `
-                                <div class="thumb">📦</div>
-                                <div class="name">${p.name || 'Untitled'}</div>
-                                <div class="meta">${p.objects || 0} objects • Local</div>
-                                <div class="actions">
-                                    <button onclick="loadLocalProject('${p.id}')">Open</button>
-                                    <button onclick="deleteLocalProject('${p.id}')">🗑️</button>
-                                </div>
-                            `;
-                        grid.appendChild(card);
-                    });
-                } else {
-                    grid.innerHTML = '';
-                    empty.classList.remove('hidden');
-                }
+                errorMsg = `⚠️ Camera error: ${err.message}`;
             }
+            
+            showToast(errorMsg, '🚫');
+            document.getElementById('hand-status').textContent = 'Error';
+            document.getElementById('hand-status').style.color = '#ff4466';
+            document.getElementById('camera-status').className = 'status-dot inactive';
+            updateLoading(60, '⚠️ Camera access denied');
+            
+            // Show placeholder animation
+            const canvas = document.getElementById('hand-overlay');
+            const ctx = canvas.getContext('2d');
+            animatePlaceholder(ctx, canvas);
+            
+            return false;
         }
+    }
 
-        function loadProjectFromServer(id) {
-            if (state.socket && state.socket.connected) {
-                state.socket.emit('load_project', { id }, (data) => {
-                    if (data) {
-                        loadSceneData(data);
-                        closeLibrary();
-                        showToast('✅ Project loaded from cloud', '☁️');
-                    }
-                });
+    function animatePlaceholder(ctx, canvas) {
+        let time = 0;
+        
+        function draw() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            canvas.style.width = '100%';
+            canvas.style.height = '100%';
+            ctx.scale(dpr, dpr);
+            
+            const w = rect.width || 280;
+            const h = rect.height || 210;
+            
+            ctx.clearRect(0, 0, w, h);
+            time += 0.02;
+            
+            // Draw animated hand outline
+            const cx = w / 2, cy = h / 2 + 10;
+            const radius = 30 + Math.sin(time) * 3;
+            
+            // Glow
+            const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius * 2);
+            grad.addColorStop(0, 'rgba(0, 240, 255, 0.1)');
+            grad.addColorStop(1, 'rgba(0, 240, 255, 0)');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius * 2, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Hand outline (simplified)
+            ctx.strokeStyle = `rgba(0, 240, 255, ${0.3 + Math.sin(time) * 0.1})`;
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([5, 5]);
+            
+            // Palm
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            // Fingers
+            for (let i = 0; i < 5; i++) {
+                const angle = (i / 5) * Math.PI * 2 - Math.PI / 2;
+                const fx = cx + Math.cos(angle) * radius * 1.2;
+                const fy = cy + Math.sin(angle) * radius * 1.2;
+                const len = 20 + Math.sin(time * 0.8 + i) * 5;
+                
+                ctx.beginPath();
+                ctx.moveTo(cx + Math.cos(angle) * radius * 0.8, cy + Math.sin(angle) * radius * 0.8);
+                ctx.lineTo(fx + Math.cos(angle) * len, fy + Math.sin(angle) * len);
+                ctx.stroke();
             }
+            
+            ctx.setLineDash([]);
+            
+            // Text
+            ctx.fillStyle = `rgba(255,255,255,${0.4 + Math.sin(time * 0.5) * 0.1})`;
+            ctx.font = '13px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText('📷 No Camera', cx, cy - radius - 20);
+            ctx.font = '10px sans-serif';
+            ctx.fillText('Gesture control unavailable', cx, cy - radius - 5);
+            
+            requestAnimationFrame(draw);
         }
+        
+        draw();
+    }
 
-        function deleteProjectFromServer(id) {
-            if (confirm('Delete this project?')) {
-                if (state.socket && state.socket.connected) {
-                    state.socket.emit('delete_project', { id }, (res) => {
-                        if (res && res.success) {
-                            refreshLibrary();
-                            showToast('🗑️ Project deleted', '🗑️');
+    // ================================================================
+    // 9. FRAME SENDING (Optimized)
+    // ================================================================
+    function sendFrames(video) {
+        const canvas = document.createElement('canvas');
+        canvas.width = CONFIG.frameWidth;
+        canvas.height = CONFIG.frameHeight;
+        const ctx = canvas.getContext('2d');
+        
+        let lastSend = 0;
+        let frameSkip = 0;
+        const MAX_SKIP = 3;
+        let quality = 0.5;
+        let adaptiveQuality = true;
+
+        function capture() {
+            const now = performance.now();
+            const elapsed = now - lastSend;
+            
+            if (elapsed >= CONFIG.frameInterval && wsManager.socket?.connected) {
+                try {
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    
+                    // Adaptive quality based on performance
+                    if (adaptiveQuality) {
+                        const fps = document.getElementById('fps-counter');
+                        const currentFps = parseInt(fps.textContent) || 30;
+                        if (currentFps < 20) {
+                            quality = Math.max(0.3, quality - 0.05);
+                        } else if (currentFps > 25 && quality < 0.7) {
+                            quality = Math.min(0.7, quality + 0.05);
                         }
-                    });
+                    }
+                    
+                    canvas.toBlob((blob) => {
+                        if (blob && wsManager.socket?.connected) {
+                            const reader = new FileReader();
+                            reader.onload = () => {
+                                wsManager.sendFrame(reader.result);
+                            };
+                            reader.readAsArrayBuffer(blob);
+                        }
+                    }, 'image/jpeg', quality);
+                    
+                    lastSend = now;
+                    frameSkip = 0;
+                } catch (e) {
+                    // Silent fail
                 }
             }
+            
+            requestAnimationFrame(capture);
         }
+        
+        capture();
+    }
 
-        function loadLocalProject(id) {
-            const projects = JSON.parse(localStorage.getItem('xena_projects') || '[]');
-            const p = projects.find(proj => proj.id === id);
-            if (p && p.data) {
-                loadSceneData(p.data);
-                closeLibrary();
-                showToast('✅ Local project loaded', '📂');
-            }
+    // ================================================================
+    // 10. OUTLINER REFRESH
+    // ================================================================
+    function refreshOutliner() {
+        const list = document.getElementById('outliner-list');
+        const empty = document.getElementById('outliner-empty');
+        
+        const objects = appState.state.objects || [];
+        
+        if (objects.length === 0) {
+            list.innerHTML = '<div class="outliner-empty" id="outliner-empty">No objects yet — add a shape to begin.</div>';
+            return;
         }
+        
+        list.innerHTML = '';
+        objects.forEach(obj => {
+            const item = document.createElement('div');
+            item.className = 'outliner-item' + (obj === appState.state.selectedObject ? ' active' : '');
+            
+            // Color dot
+            const color = '#' + obj.userData.originalColor.toString(16).padStart(6, '0');
+            
+            item.innerHTML = `
+                <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};flex-shrink:0;"></span>
+                <span class="oi-name">${obj.userData.name || 'Object'}</span>
+                <span class="oi-del" data-id="${obj.userData.id}">✕</span>
+            `;
+            
+            item.addEventListener('click', () => {
+                if (scene3D) scene3D.selectObject(obj);
+            });
+            
+            const delBtn = item.querySelector('.oi-del');
+            delBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (scene3D) scene3D.deleteSelected();
+            });
+            
+            list.appendChild(item);
+        });
+    }
 
-        function deleteLocalProject(id) {
-            let projects = JSON.parse(localStorage.getItem('xena_projects') || '[]');
-            projects = projects.filter(p => p.id !== id);
-            localStorage.setItem('xena_projects', JSON.stringify(projects));
-            refreshLibrary();
-            showToast('🗑️ Local project deleted', '🗑️');
-        }
+    // ================================================================
+    // 11. SAVE / LOAD
+    // ================================================================
+    function getSceneData() {
+        const objects = (appState.state.objects || []).map(obj => ({
+            id: obj.userData.id,
+            type: obj.userData.type,
+            name: obj.userData.name,
+            color: '#' + obj.userData.originalColor.toString(16).padStart(6, '0'),
+            position: [obj.position.x, obj.position.y, obj.position.z],
+            rotation: [obj.rotation.x, obj.rotation.y, obj.rotation.z],
+            scale: [obj.scale.x, obj.scale.y, obj.scale.z],
+        }));
 
-        // ---- 16. SHARE ----
-        function shareProject() {
-            const data = getSceneData();
-            const json = JSON.stringify(data);
-            const blob = new Blob([json], { type: 'application/json' });
-            const file = new File([blob], `${state.projectName}.xena`, { type: 'application/json' });
+        return {
+            project: {
+                name: 'XENA Project',
+                created: new Date().toISOString(),
+                modified: new Date().toISOString(),
+                version: '2.0',
+            },
+            scene: {
+                camera: {
+                    position: [
+                        scene3D ? scene3D.camera.position.x : 6,
+                        scene3D ? scene3D.camera.position.y : 5,
+                        scene3D ? scene3D.camera.position.z : 8,
+                    ],
+                    target: [0, 0.5, 0],
+                },
+            },
+            objects: objects,
+            metadata: {
+                author: 'XENA Pro User',
+                objectCount: objects.length,
+            },
+        };
+    }
 
-            if (navigator.share) {
-                navigator.share({
-                    title: 'XENA Project',
-                    text: `Check out my design: ${state.projectName}`,
-                    files: [file],
-                }).catch(() => {});
-            } else {
-                // Fallback: copy link
-                const url = window.location.href;
-                navigator.clipboard.writeText(url).then(() => {
-                    showToast('📋 Link copied! Share it with others.', '📱');
-                }).catch(() => {
-                    showToast('📱 Share: ' + url, '📱');
-                });
-            }
-        }
+    function saveProject() {
+        if (!scene3D) return;
+        
+        const data = getSceneData();
+        const json = JSON.stringify(data, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        // Try cloud save
+        wsManager.saveProject(data);
+        
+        // Also download locally
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `xena_project_${Date.now()}.xena`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+        
+        appState.setState({ hasChanges: false });
+        showToast('✅ Project saved!', '💾');
+    }
 
-        // ---- 17. TOUCH SUPPORT ----
-        function setupTouchSupport() {
-            const container = document.getElementById('three-container');
-
-            // Touch events for mobile
-            let touchStart = null;
-            let touchLast = null;
-
-            container.addEventListener('touchstart', (e) => {
-                const touch = e.touches[0];
-                touchStart = { x: touch.clientX, y: touch.clientY };
-                touchLast = { x: touch.clientX, y: touch.clientY };
-            }, { passive: true });
-
-            container.addEventListener('touchmove', (e) => {
-                if (!touchStart || !state.scene3D) return;
-                const touch = e.touches[0];
-                const dx = touch.clientX - touchLast.x;
-                const dy = touch.clientY - touchLast.y;
-
-                // Two fingers = zoom
-                if (e.touches.length === 2) {
-                    const t1 = e.touches[0];
-                    const t2 = e.touches[1];
-                    const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
-                    // Zoom handled by three.js controls
-                } else {
-                    // One finger = orbit (handled by OrbitControls)
+    function loadProject(file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = JSON.parse(e.target.result);
+                if (data.objects && data.scene) {
+                    loadSceneData(data);
+                    showToast('✅ Project loaded!', '📂');
                 }
+            } catch (err) {
+                showToast('❌ Invalid project file', '⚠️');
+            }
+        };
+        reader.readAsText(file);
+    }
 
-                touchLast = { x: touch.clientX, y: touch.clientY };
-            }, { passive: true });
+    function loadSceneData(data) {
+        // Clear existing objects
+        (appState.state.objects || []).forEach(obj => {
+            if (obj.userData.glowRing) {
+                scene3D.scene.remove(obj.userData.glowRing);
+            }
+            scene3D.scene.remove(obj);
+        });
+        
+        const newObjects = [];
+        
+        // Load objects
+        data.objects.forEach((objData, index) => {
+            const color = parseInt(objData.color.replace('#', ''), 16);
+            const mesh = scene3D.createMesh(objData.type, color);
+            mesh.position.set(objData.position[0], objData.position[1], objData.position[2]);
+            mesh.rotation.set(objData.rotation[0], objData.rotation[1], objData.rotation[2]);
+            mesh.scale.set(objData.scale[0], objData.scale[1], objData.scale[2]);
+            mesh.userData = {
+                id: objData.id || `obj_${index}`,
+                name: objData.name || objData.type,
+                type: objData.type,
+                color: color,
+                originalColor: color,
+            };
+            scene3D.scene.add(mesh);
+            newObjects.push(mesh);
+        });
+        
+        appState.setState({ objects: newObjects, hasChanges: false });
+        scene3D.selectObject(null);
+        refreshOutliner();
+        showToast('✅ Project loaded successfully', '📂');
+    }
 
-            container.addEventListener('touchend', () => {
-                touchStart = null;
-                touchLast = null;
-            }, { passive: true });
+    // ================================================================
+    // 12. GESTURE HANDLER
+    // ================================================================
+    function handleGestureData(data) {
+        if (!data) return;
+        
+        // Update UI
+        if (data.gesture) {
+            appState.setState({ gesture: data.gesture });
+            document.getElementById('gesture-display').textContent = data.gesture;
+            updateGestureUI(data.gesture);
         }
+        
+        if (data.confidence) {
+            appState.setState({ confidence: data.confidence });
+            document.getElementById('confidence-display').textContent = Math.round(data.confidence * 100) + '%';
+        }
+        
+        // Update hand renderer
+        if (handRenderer) {
+            handRenderer.render(data);
+        }
+        
+        // Handle actions
+        if (data.actions && data.actions.length > 0) {
+            data.actions.forEach(action => {
+                if (scene3D) {
+                    scene3D.handleGestureAction(action);
+                }
+            });
+        }
+    }
 
-        // ---- 18. KEYBOARD SHORTCUTS ----
+    // ================================================================
+    // 13. UI UPDATES
+    // ================================================================
+    function updateGestureUI(gesture) {
+        document.querySelectorAll('#gesture-guide .icon').forEach(el => {
+            const isActive = el.dataset.gesture === gesture;
+            el.classList.toggle('active', isActive);
+        });
+    }
+
+    // ================================================================
+    // 14. INITIALIZATION
+    // ================================================================
+    let scene3D = null;
+    let handRenderer = null;
+
+    async function init() {
+        updateLoading(10, 'Initializing 3D engine...');
+        
+        // Setup Three.js
+        const container = document.getElementById('three-container');
+        scene3D = new Scene3D(container);
+        updateLoading(40, '3D engine ready...');
+        
+        // Setup hand renderer
+        const canvas = document.getElementById('hand-overlay');
+        handRenderer = new HandRenderer(canvas);
+        updateLoading(50, 'Hand renderer ready...');
+        
+        // Setup WebSocket
+        wsManager.onConnectCallback = () => {
+            updateLoading(60, 'Connected to server...');
+        };
+        wsManager.onGestureCallback = handleGestureData;
+        wsManager.connect();
+        
+        // Setup camera
+        const cameraReady = await setupCamera();
+        if (!cameraReady) {
+            // Still show the UI even without camera
+            showToast('⚠️ Running without camera - gesture control disabled', '⚠️');
+        }
+        
+        updateLoading(90, 'Ready!');
+        
+        // Hide loading screen
+        setTimeout(() => {
+            document.getElementById('loading').classList.add('hidden');
+            updateLoading(100, 'Ready!');
+        }, 500);
+        
+        // Setup UI events
+        setupUIEvents();
+        
+        // Window resize
+        window.addEventListener('resize', () => {
+            if (handRenderer) handRenderer.resize();
+        });
+    }
+
+    // ================================================================
+    // 15. UI EVENTS
+    // ================================================================
+    function setupUIEvents() {
+        // Gizmo modes
+        document.querySelectorAll('.gizmo-modes button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.gizmo-modes button').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                if (scene3D) {
+                    scene3D.setGizmoMode(btn.dataset.mode);
+                }
+            });
+        });
+        
+        // Shape buttons
+        document.querySelectorAll('.shape-grid button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (scene3D) {
+                    scene3D.spawnShape(btn.dataset.shape);
+                    showToast(`Added ${btn.dataset.shape}`, '✨');
+                }
+            });
+        });
+        
+        // Toolbar actions
+        document.getElementById('tb-duplicate').addEventListener('click', () => {
+            if (scene3D) scene3D.duplicateSelected();
+        });
+        
+        document.getElementById('tb-delete').addEventListener('click', () => {
+            if (scene3D) scene3D.deleteSelected();
+        });
+        
+        document.getElementById('tb-reset-view').addEventListener('click', () => {
+            if (scene3D) scene3D.resetView();
+        });
+        
+        document.getElementById('tb-undo').addEventListener('click', () => {
+            if (scene3D) scene3D.undo();
+        });
+        
+        document.getElementById('tb-redo').addEventListener('click', () => {
+            if (scene3D) scene3D.redo();
+        });
+        
+        // Save button
+        document.getElementById('save-btn').addEventListener('click', saveProject);
+        
+        // Menu toggle
+        document.getElementById('menu-toggle').addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.getElementById('save-menu').classList.toggle('open');
+        });
+        
+        document.addEventListener('click', () => {
+            document.getElementById('save-menu').classList.remove('open');
+        });
+        
+        // Menu items
+        document.querySelectorAll('#save-menu .item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const action = item.dataset.action;
+                switch (action) {
+                    case 'download':
+                        saveProject();
+                        break;
+                    case 'screenshot':
+                        takeScreenshot();
+                        break;
+                    case 'library':
+                        openLibrary();
+                        break;
+                    case 'gltf':
+                        exportGLTF();
+                        break;
+                    case 'obj':
+                        exportOBJ();
+                        break;
+                    default:
+                        showToast('Coming soon!', '🚧');
+                }
+                document.getElementById('save-menu').classList.remove('open');
+            });
+        });
+        
+        // Properties panel controls
+        document.getElementById('panel-zoom-in').addEventListener('click', () => {
+            if (scene3D) scene3D.zoom(0.5);
+        });
+        
+        document.getElementById('panel-zoom-out').addEventListener('click', () => {
+            if (scene3D) scene3D.zoom(-0.5);
+        });
+        
+        // Properties inputs
+        ['pos-x', 'pos-y', 'pos-z'].forEach(axis => {
+            document.getElementById(`obj-${axis}`).addEventListener('change', (e) => {
+                if (scene3D && scene3D.selectedObject) {
+                    scene3D.selectedObject.position[axis.split('-')[1]] = parseFloat(e.target.value);
+                    scene3D.updateProperties(scene3D.selectedObject);
+                    appState.setState({ hasChanges: true });
+                }
+            });
+        });
+        
+        ['rot-x', 'rot-y', 'rot-z'].forEach(axis => {
+            document.getElementById(`obj-${axis}`).addEventListener('change', (e) => {
+                if (scene3D && scene3D.selectedObject) {
+                    scene3D.selectedObject.rotation[axis.split('-')[1]] = THREE.MathUtils.degToRad(parseFloat(e.target.value));
+                    scene3D.updateProperties(scene3D.selectedObject);
+                    appState.setState({ hasChanges: true });
+                }
+            });
+        });
+        
+        ['scale-x', 'scale-y', 'scale-z'].forEach(axis => {
+            document.getElementById(`obj-${axis}`).addEventListener('change', (e) => {
+                if (scene3D && scene3D.selectedObject) {
+                    const val = Math.max(0.1, parseFloat(e.target.value));
+                    scene3D.selectedObject.scale[axis.split('-')[1]] = val;
+                    scene3D.updateProperties(scene3D.selectedObject);
+                    appState.setState({ hasChanges: true });
+                }
+            });
+        });
+        
+        // Name input
+        document.getElementById('obj-name-input').addEventListener('change', (e) => {
+            if (scene3D && scene3D.selectedObject) {
+                scene3D.selectedObject.userData.name = e.target.value || 'Object';
+                refreshOutliner();
+                appState.setState({ hasChanges: true });
+            }
+        });
+        
+        // Color picker
+        document.getElementById('obj-color').addEventListener('input', (e) => {
+            if (scene3D && scene3D.selectedObject) {
+                const color = parseInt(e.target.value.replace('#', ''), 16);
+                scene3D.selectedObject.userData.originalColor = color;
+                scene3D.selectedObject.material.color.set(color);
+                if (scene3D.selectedObject !== scene3D.selectedObject) {
+                    // Re-select to update glow
+                }
+                refreshOutliner();
+                appState.setState({ hasChanges: true });
+            }
+        });
+        
+        // Library
+        document.getElementById('library-close').addEventListener('click', closeLibrary);
+        document.getElementById('library-overlay').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) closeLibrary();
+        });
+        
+        // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
-            if (e.ctrlKey && e.key === 's') {
-                e.preventDefault();
-                saveProject();
-            }
             if (e.key === 'Escape') {
                 closeLibrary();
-                if (state.scene3D) state.scene3D.selectObject(null);
+                document.getElementById('save-menu').classList.remove('open');
             }
-            if (e.key === 'Delete' || e.key === 'Backspace') {
-                if (state.scene3D && state.scene3D.selectedObject) {
-                    state.scene3D.deleteSelected();
-                    state.hasChanges = true;
-                    showToast('🗑️ Object deleted', '🗑️');
+        });
+    }
+
+    // ================================================================
+    // 16. UTILITY FUNCTIONS
+    // ================================================================
+    function takeScreenshot() {
+        if (!scene3D) return;
+        const canvas = scene3D.renderer.domElement;
+        const link = document.createElement('a');
+        link.download = `xena_screenshot_${Date.now()}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        showToast('🖼️ Screenshot saved!', '📸');
+    }
+
+    function exportGLTF() {
+        showToast('📤 GLTF export coming soon!', '🚧');
+    }
+
+    function exportOBJ() {
+        showToast('📤 OBJ export coming soon!', '🚧');
+    }
+
+    function openLibrary() {
+        document.getElementById('library-overlay').classList.add('open');
+        refreshLibrary();
+    }
+
+    function closeLibrary() {
+        document.getElementById('library-overlay').classList.remove('open');
+    }
+
+    function refreshLibrary() {
+        const grid = document.getElementById('library-grid');
+        const empty = document.getElementById('library-empty');
+        
+        wsManager.listProjects();
+        
+        wsManager.socket?.on('projects_list', (projects) => {
+            if (projects && projects.length > 0) {
+                grid.innerHTML = '';
+                empty.classList.add('hidden');
+                projects.forEach(p => {
+                    const card = document.createElement('div');
+                    card.className = 'project-card';
+                    card.innerHTML = `
+                        <div class="thumb">📦</div>
+                        <div class="name">${p.name || 'Untitled'}</div>
+                        <div class="meta">${p.objects || 0} objects • ${p.date || 'Unknown'}</div>
+                        <div class="actions">
+                            <button onclick="loadProjectFromServer('${p.id}')">Open</button>
+                            <button onclick="deleteProjectFromServer('${p.id}')">🗑️</button>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+            } else {
+                grid.innerHTML = '';
+                empty.classList.remove('hidden');
+            }
+        });
+    }
+
+    // Make these functions globally accessible
+    window.loadProjectFromServer = function(id) {
+        wsManager.loadProject(id);
+        wsManager.socket?.on('load_response', (data) => {
+            if (data.success && data.data) {
+                loadSceneData(data.data);
+                closeLibrary();
+                showToast('✅ Project loaded from cloud', '☁️');
+            }
+        });
+    };
+
+    window.deleteProjectFromServer = function(id) {
+        if (confirm('Delete this project?')) {
+            wsManager.deleteProject(id);
+            wsManager.socket?.on('delete_response', (data) => {
+                if (data.success) {
+                    refreshLibrary();
+                    showToast('🗑️ Project deleted', '🗑️');
                 }
-            }
-            // Blender-style gizmo shortcuts: G(move) R(rotate) S(scale) E(extrude)
-            const modeKeys = { g: 'translate', r: 'rotate', s: 'scale', e: 'extrude' };
-            const tag = (e.target && e.target.tagName) || '';
-            if (modeKeys[e.key.toLowerCase()] && tag !== 'INPUT' && !e.ctrlKey && !e.metaKey) {
- 
+            });
+        }
+    };
+
+    // ================================================================
+    // 17. START THE APPLICATION
+    // ================================================================
+    
+    // Start when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+
+    console.log('🚀 XENA Pro initialized');
+    console.log('📐 Version: 2.0.0');
+    console.log('🖐️ Gesture control ready');
+    console.log('🎨 3D workspace ready');
+
+    </script>
+</body>
+</html>
